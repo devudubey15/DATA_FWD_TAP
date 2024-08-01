@@ -1,0 +1,2466 @@
+MACROS
+variables and strutures 
+function
+SQL Querry
+----------------------------
+
+Files
+
+    fo_exg_pack_lib:
+    ----------------
+
+        Functions:
+        ---------
+
+            1. fn_pack_sprdord_to_nse   in    (fo_exg_pack_lib)
+
+                Strcutures used in this function :
+                ----------------------------------
+                package structures
+
+                Macros:
+                -------
+                    const (
+                        LEN_BROKER_ID       = 5
+                        LEN_FILLER_OPTIONS  = 3
+                        LEN_ACCOUNT_NUMBER  = 10
+                        LEN_REMARKS         = 24
+                        LEN_SETTLOR         = 12
+                        LEN_ALPHA_CHAR      = 2
+                        LEN_TIME_STAMP      = 8
+                        LEN_INSTRUMENT_NAME = 6
+                        LEN_SYMBOL_NSE      = 10
+                        LEN_OPTION_TYPE     = 2
+                        LEN_ORDR_RFRNC     //******* NOT FOUND
+                        LEN_PAN            //******* NOT FOUND
+                    )
+
+                    DEBUG_MSG_LVL_0 ----> Not Clear 
+                    DEBUG_MSG_LVL_1 ----> Not Clear
+                    DEBUG_MSG_LVL_3 ----> Not Clear
+
+                    NEW        'N'  // "from fo.h"
+                    MODIFY     'M'  // "from fo.h"
+                    CANCEL     'C'  // "from fo.h"
+
+                    SP_BOARD_LOT_IN     //******* NOT FOUND
+                    SP_ORDER_MOD_IN     //******* NOT FOUND
+                    SP_ORDER_CANCEL_IN  //******* NOT FOUND
+
+                    TWOL_BOARD_LOT_IN   //******* NOT FOUND
+                    THRL_BOARD_LOT_IN   //******* NOT FOUND
+
+                    LEN_TIME_STAMP
+
+                    TRADER        -------------> 'T'  // from  "fo_exg_esr_lib.h"
+                    CORPORATE_MANAGER ---------> 'M' // from  "fo_exg_esr_lib.h"
+                    BRANCH_MANAGER ------------> 'B' // from  "fo_exg_esr_lib.h"
+
+
+                    STOP_LOSS_MIT_ORDER  //******* NOT FOUND
+                        
+
+                    NSE_BUY  -----> 1 // from  "fo_exg_esr_lib.h"
+                    NSE_SELL -----> 2 // from  "fo_exg_esr_lib.h"
+
+
+                    FO_NON_ALG_ID       //******* NOT FOUND
+                    FO_NON_ALG_CAT_ID   //******* NOT FOUND
+
+
+                    L3_ORDER  ------> '3' // from "fo.h"
+
+                    LIBMSG  --------> "Error in library function" // from "fo.h"
+
+                    MEMSET()  ------>  MEMSET(A) memset(&A,'\0',sizeof(A))  // from "fo.h"
+                    SETNULL() ------>  SETNULL(a) a.arr[a.len]='\0' // from "fo.h"
+
+                Structures:
+                -----------
+                    type vw_xchngbook struct {
+                        c_pipe_id      string // null="*"
+                        c_mod_trd_dt   string // null="*"
+                        c_slm_flg      byte   // null='*'
+                        l_dsclsd_qty   int64  // null=-1
+                        l_ord_tot_qty  int64  // null=-1
+                        l_ord_lmt_rt   int64  // null=-1
+                        l_stp_lss_tgr  int64  // null=-1
+                        c_ord_typ      byte   // null='*'
+                        c_sprd_ord_ind byte   // null='*'
+                        c_req_typ      byte   // null='*'
+                    }
+
+                    type vw_orderbook struct {
+                        c_cln_mtch_accnt string // null="*"
+                        c_ordr_flw       byte   // null='*'
+                        l_ord_tot_qty    int64  // null=-1
+                        l_exctd_qty      int64  // null=-1
+                        l_exctd_qty_day  int64  // null=-1
+                        c_settlor        string // null="*"
+                        c_xchng_ack      string // null="*"
+                        c_spl_flg        byte   // null='*'
+                        c_ack_tm         string // null="*"
+                        c_prev_ack_tm    string // null="*"
+                        c_pro_cli_ind    byte   // null='*'
+                        c_ctcl_id        string // null="*"
+                    }
+
+                    type vw_nse_cntrct struct {
+                        c_xchng_cd     string // null="*"
+                        c_ctgry_indstk byte   // null='*'
+                        c_symbol       string // null="*"
+                        l_ca_lvl       int64  // null=-1
+                        l_token_id     int64  // null=-1
+                    }
+
+                    type vw_spdordbk struct {
+                        c_sprd_ord_rfrnc [3]string // null="*"
+                    }
+
+                    type st_opm_pipe_mstr struct {
+                        li_opm_brnch_id int64  // null=-1
+                        c_xchng_brkr_id string // null="*"
+                        c_opm_trdr_id   string // null="*"
+                        si_user_typ_glb int    // null=0   (i think , it can be 0 (for trader) , 4 (for CORPORATE_MANAGER) , 5 (for BRANCH_MANAGER) )
+                    }
+
+                    type st_req_q_data struct {
+                        li_msg_type      int64
+                        st_exch_msg_data st_exch_msg // it is union in original file
+                    }
+
+                    type st_exch_msg struct {
+                        st_net_header  st_net_hdr
+                        st_exch_sndmsg st_exch_snd_msg
+                    }
+
+                    type st_net_hdr struct {
+                        si_message_length int16
+                        i_seq_num         int32
+                        c_checksum        [16]byte
+                    }
+
+                    type st_exch_snd_msg struct {
+                        st_spdoe_reqres st_spd_oe_reqres
+                    }
+
+                    type st_spd_oe_reqres struct {
+                        St_hdr                     st_int_header
+                        C_participant_type         byte
+                        C_filler1                  byte
+                        Si_competitor_period       int16
+                        Si_solicitor_period        int16
+                        C_mod_cxl_by               byte
+                        C_filler2                  byte
+                        Si_reason_code             int16
+                        C_start_alpha              [2]byte
+                        C_end_alpha                [2]byte
+                        L_token                    int32 // V1.4
+                        St_cntrct_desc             st_contract_desc
+                        C_op_broker_id             [LEN_BROKER_ID]byte
+                        C_filler3                  byte
+                        C_filler_options           [LEN_FILLER_OPTIONS]byte
+                        C_filler4                  byte
+                        Si_order_type              int16
+                        D_order_number             float64
+                        C_account_number           [LEN_ACCOUNT_NUMBER]byte
+                        Si_book_type               int16
+                        Si_buy_sell                int16
+                        Li_disclosed_vol           int32
+                        Li_disclosed_vol_remaining int32
+                        Li_total_vol_remaining     int32
+                        Li_volume                  int32
+                        Li_volume_filled_today     int32
+                        Li_price                   int32
+                        Li_trigger_price           int32
+                        Li_good_till_date          int32
+                        Li_entry_date_time         int32
+                        Li_min_fill_aon            int32
+                        Li_last_modified           int32
+                        St_order_flgs              st_order_flags
+                        Si_branch_id               int16
+                        Li_trader_id               int32 // Ver 1.8 Data Type Changed From Short Int To Long
+                        C_broker_id                [LEN_BROKER_ID]byte
+                        C_oe_remarks               [LEN_REMARKS]byte
+                        C_open_close               byte
+                        C_settlor                  [LEN_SETTLOR]byte
+                        Si_pro_client              int16
+                        Si_settlement_period       int16
+                        C_cover_uncover            byte
+                        C_give_up_flag             byte
+                        // Ver 1.3 fields omitted
+                        I_sprd_seq_no      int
+                        D_nnf_field        float64
+                        D_filler19         float64
+                        C_pan              [10]byte // Ver 2.7
+                        L_algo_id          int64    // Ver 2.7
+                        Si_algo_category   int16    // Ver 2.7
+                        Ll_lastactivityref int64    // Ver 2.9
+                        C_reserved         [52]byte // Ver 2.9 (Not used)
+                        Li_spd_price_diff  int32
+                        St_spd_lg_inf      [2]st_spd_leg_info
+                    }
+
+                    type st_int_header struct {
+                        Si_transaction_code int16
+                        Li_log_time         int32
+
+                        C_alpha_char      [LEN_ALPHA_CHAR]byte
+                        Li_trader_id      int32
+                        Si_error_code     int16
+                        C_filler_2        [8]byte
+                        C_time_stamp_1    [LEN_TIME_STAMP]byte
+                        C_time_stamp_2    [LEN_TIME_STAMP]byte
+                        Si_message_length int16
+                    }
+
+                    type st_spd_leg_info struct {
+                        L_token                    int32
+                        St_cntrct_desc             st_contract_desc
+                        C_op_broker_id             [LEN_BROKER_ID]byte
+                        C_filler1                  byte
+                        Si_order_type              int16
+                        Si_buy_sell                int16
+                        Li_disclosed_vol           int32
+                        Li_disclosed_vol_remaining int32
+                        Li_total_vol_remaining     int32
+                        Li_volume                  int32
+                        Li_volume_filled_today     int32
+                        Li_price                   int32
+                        Li_trigger_price           int32
+                        Li_min_fill_aon            int32
+                        St_order_flgs              st_order_flags
+                        C_open_close               byte
+                        C_cover_uncover            byte
+                        C_giveup_flag              byte
+                        C_filler2                  byte
+                    }
+
+                    type st_contract_desc struct {
+                        C_instrument_name [LEN_INSTRUMENT_NAME]byte
+                        C_symbol          [LEN_SYMBOL_NSE]byte
+                        Li_expiry_date    int32
+                        Li_strike_price   int32
+                        C_option_type     [LEN_OPTION_TYPE]byte
+                        Si_ca_level       int16
+                    }
+
+                    type st_order_flags struct {
+                        flg_ato         uint32 // 1 bit
+                        flg_market      uint32 // 1 bit
+                        flg_sl          uint32 // 1 bit
+                        flg_mit         uint32 // 1 bit
+                        flg_day         uint32 // 1 bit
+                        flg_gtc         uint32 // 1 bit
+                        flg_ioc         uint32 // 1 bit
+                        flg_aon         uint32 // 1 bit
+                        flg_mf          uint32 // 1 bit
+                        flg_matched_ind uint32 // 1 bit
+                        flg_traded      uint32 // 1 bit
+                        flg_modified    uint32 // 1 bit
+                        flg_frozen      uint32 // 1 bit
+                        flg_filler1     uint32 // 3 bits
+                    }
+
+                    type st_pk_sequence struct {
+                        c_pipe_id  [3]byte
+                        c_trd_dt   [23]byte
+                        c_rqst_typ [3]byte
+                        i_seq_num  int32
+                    }
+
+
+                functions used in "fn_pack_sprdord_to_nse" :
+                --------------------------------------------
+
+                    fn_userlog(st_spdord_req.st_spd_lg_inf[i_cnt - 1].c_op_broker_id, LEN_BROKER_ID," ",1)  // fn_log.c
+                    fn_errlog(c_ServiceName, "L31045", " Invalid Slm Flag ", c_err_msg);                    // fn_log.c
+
+
+                    fn_sub_seq(c_ordr_ref_no) // fo_exg_pac_lib.C
+                    fn_get_fno_pack_seq(c_ServiceName, &st_s_sequence, c_err_msg) // fo_exg_pac_lib.c
+
+
+                    fn_get_reset_seq( ptr_st_rqst[0].c_pipe_id, ptr_st_rqst[0].c_mod_trd_dt, GET_PLACED_SEQ, &i_snd_seq, c_ServiceName, c_err_msg);
+                    //fo_exg_msgs.pc
+                    fn_orstonse_cntrct_desc((struct vw_nse_cntrct *)&ptr_st_nse_cnt[0], &st_spdord_req.st_cntrct_desc, c_ServiceName, c_err_msg);
+                    // fo_exg_msgs.pc
+
+
+                    fn_cnvt_htn_spd2L3L_req(&st_spdord_req); // fn_host_to_nw_format_nse.c
+                    fn_cnvt_htn_net_hdr(&st_exch_message.st_net_header) // fn_host_to_nw_format_nse.c
+
+
+                    fn_cal_md5digest((void *)&st_spdord_req, sizeof(st_spdord_req), digest) // fn_md5.c
+
+                    
+
+                    fn_orstonse_char(st_spdord_req.c_reserved,52, " ", 1); // fn_scklib_tap.c , but function  with same name is in another file
+                    fn_timearr_to_long(ptr_st_ord[0].c_prev_ack_tm, &(st_spdord_req.li_last_modified)); //  fn_scklib_tap.c
+                    
+                SQL Querry:-
+                ------------
+
+                    MEMSET(sql_icd_cust_type);
+                    EXEC SQL
+                        SELECT ICD_CUST_TYPE
+                            INTO :sql_icd_cust_type
+                            FROM ICD_INFO_CLIENT_DTLS,
+                                IAI_INFO_ACCOUNT_INFO
+                            WHERE ICD_SERIAL_NO = IAI_SERIAL_NO
+                                AND IAI_MATCH_ACCOUNT_NO = :ptr_st_ord[0].c_cln_mtch_accnt;
+
+                Table:
+                ------
+                        
+                    ICD_INFO_CLIENT_DTLS
+                    ---------------------
+                        Name                                                              Null?    Type
+                        ----------------------------------------------------------------- -------- ------------------------------
+                        ICD_SERIAL_NO                                                     NOT NULL NUMBER(10)
+                        ICD_CUST_TYPE                                                              VARCHAR2(5)
+                        ICD_INWARD_DATE                                                            DATE
+                        ICD_SCHEME_TYP                                                             VARCHAR2(30)
+                        ICD_INWARD_STATUS                                                          VARCHAR2(3)
+                        ICD_INWARD_ACCP_DT                                                         DATE
+                        ICD_INWARD_AGRMNT_DATE                                                     DATE
+                        ICD_AGENT_CD                                                               VARCHAR2(10)
+                        ICD_SUB_AGENT_CD                                                           VARCHAR2(10)
+                        ICD_PRODUCT_CD                                                             VARCHAR2(50)
+                        ICD_ICICI_EMP_NO                                                           VARCHAR2(10)
+                        ICD_TOS_CD                                                                 VARCHAR2(50)
+                        ICD_ARN_NO                                                                 VARCHAR2(10)
+                        ICD_RECEIPT_DATE                                                           DATE
+                        ICD_FORM_VERSION                                                           VARCHAR2(5)
+                        ICD_USER_ID                                                                VARCHAR2(8)
+                        ICD_WEB_USER_ID_NOT_IN_USE                                                 VARCHAR2(8)
+                        ICD_OCC_CD                                                                 VARCHAR2(50)
+                        ICD_MARITAL_STATUS                                                         CHAR(1)
+                        ICD_EDUCATION_CD                                                           VARCHAR2(50)
+                        ICD_INCOME_CAT_CD                                                          VARCHAR2(50)
+                        ICD_HOLDING_RANGE_CD                                                       VARCHAR2(50)
+                        ICD_APP_CONSTI_CD                                                          VARCHAR2(50)
+                        ICD_CUST_NRI_FLG                                                           CHAR(1)
+                        ICD_FORM_60_FLG                                                            CHAR(1)
+                        ICD_PAN_APPL                                                               VARCHAR2(50)
+                        ICD_PAN_REASON                                                             VARCHAR2(100)
+                        ICD_TAX_ASSESEE_FLG                                                        CHAR(1)
+                        ICD_NRI_EINVEST_OPT                                                        CHAR(1)
+                        ICD_FNO_AGRMNT_FLG                                                         CHAR(1)
+                        ICD_FNO_AGRMNT_VER_NO                                                      VARCHAR2(5)
+                        ICD_FNO_AGRMNT_DT                                                          DATE
+                        ICD_EFS_CD                                                                 VARCHAR2(4)
+                        ICD_EFS_FR_CD                                                              VARCHAR2(8)
+                        ICD_DMA                                                                    VARCHAR2(9)
+                        ICD_VERIFIED_BY                                                            VARCHAR2(30)
+                        ICD_VERIFICATION_DT                                                        DATE
+                        ICD_VERIFY_STATUS                                                          CHAR(1)
+                        ICD_BNK_REJ_RMKS                                                           VARCHAR2(200)
+                        ICD_PRINT_FLG                                                              CHAR(1)
+                        ICD_PRINT_DT                                                               DATE
+                        ICD_ACK_FLG                                                                CHAR(1)
+                        ICD_ACK_DT                                                                 DATE
+                        ICD_SEND_MAIL_FLG                                                          NUMBER(2)
+                        ICD_REM_DESC                                                               VARCHAR2(100)
+                        ICD_EBA_UPLOAD_FLG                                                         CHAR(1)
+                        ICD_EBA_UPLOAD_DT                                                          DATE
+                        ICD_LAS_FLG                                                                CHAR(1)
+                        ICD_LAS_CUST_TYPE                                                          CHAR(1)
+                        ICD_LAS_NO                                                                 VARCHAR2(16)
+                        ICD_MATCH_CLNT_CAT                                                         VARCHAR2(10)
+                        ICD_CLNT_CD                                                                VARCHAR2(12)
+                        ICD_ENTERED_BY                                                             VARCHAR2(100)
+                        ICD_ENTRY_DT                                                               DATE
+                        ICD_MODIFIED_BY                                                            VARCHAR2(100)
+                        ICD_MODIFY_DT                                                              DATE
+                        ICD_REJ_MAIL_RMKS                                                          VARCHAR2(100)
+                        ICD_PRINT_BY                                                               VARCHAR2(15)
+                        ICD_APPLIED_CPCODE                                                         CHAR(1)
+                        ICD_ALLOWED_OTP                                                            CHAR(1)
+                        ICD_OTP_STATUS                                                             NUMBER(2)
+                        ICD_APPLIED_CPCODE_DATE                                                    DATE
+                        ICD_APPL_EXCHANGE_DATE                                                     DATE
+                        ICD_BRPM_CODE                                                              NUMBER
+                        ICD_DEFAULT_AGRMNT_FLG                                                     CHAR(1)
+                        ICD_PAN_NO                                                                 VARCHAR2(30)
+                        ICD_ATS_STATUS                                                             CHAR(1)
+                        ICD_CAT_EMP_CODE                                                           VARCHAR2(10)
+                        ICD_RM_CODE                                                                VARCHAR2(10)
+                        ICD_FILLER_CODE                                                            VARCHAR2(10)
+                        ICD_SENT_TO_CAT                                                            CHAR(1)
+                        ICD_WKIT_ACK_FLG                                                           CHAR(1)
+                        ICD_WKIT_FLG                                                               CHAR(1)
+                        ICD_IKIT_TYPE                                                              VARCHAR2(2)
+                        ICD_WKIT_DOC_FLG                                                           CHAR(1)
+                        ICD_NRI_CATEGORY_TYPE                                                      VARCHAR2(10)
+                        ICD_NRI_BASE_SCHEME                                                        NUMBER(2)
+                        ICD_NRI_CURRENT_SCHEME                                                     NUMBER(2)
+                        ICD_NON_ISEC_AGENT_CODE                                                    VARCHAR2(10)
+                        ICD_SCANNED_AOF_DIR                                                        VARCHAR2(500)
+                        ICD_SCANNED_AOF_VERTUAL_DIR                                                VARCHAR2(50)
+                        ICD_INW_CENTER_CD                                                          VARCHAR2(10)
+                        ICD_ELOCKER_FLG                                                            CHAR(1)
+                        ICD_BILLPAYMENT_FLG                                                        CHAR(1)
+                        ICD_PARTB_NO                                                               VARCHAR2(10)
+                        ICD_MFCUSTODIAN_FLG                                                        CHAR(1)
+                        ICD_MFCUSTODIAN_CLNT_TYPE                                                  VARCHAR2(60)
+                        ICD_CLNT_CD_ATS                                                            VARCHAR2(12)
+                        ICD_FORM_VER_NO                                                            NUMBER(5)
+                        ICD_AOF_UPLOAD_DT                                                          DATE
+                        ICD_RSK_CTGRY                                                              VARCHAR2(4)
+                        ICD_ATS_BRANCH_CD                                                          VARCHAR2(20)
+                        ICD_HNI_CUST_TYPE                                                          VARCHAR2(10)
+                        ICD_MILES_DWN_STATUS                                                       NUMBER(2)
+                        ICD_PREPAID_SCH_FLG                                                        CHAR(1)
+                        ICD_CUST_SUB_TYPE                                                          VARCHAR2(50)
+                        ICD_PRIORITY_CUST_FLG                                                      VARCHAR2(1)
+                        ICD_LEAD_NO                                                                VARCHAR2(20)
+                        ICD_PWM_COMM_PERCENT                                                       NUMBER(4,2)
+                        ICD_PRIORITY_TAG_THRU                                                      VARCHAR2(100)
+                        ICD_MAIL_CUST_ID                                                           VARCHAR2(50)
+                        ICD_LAS_IPO_FUNDING_FLG                                                    CHAR(1)
+                        ICD_CUST_LAS_PAN_NO                                                        VARCHAR2(30)
+                        ICD_GSTIN                                                                  VARCHAR2(20)
+                        ICD_GST_SPCL_EXEMPTION                                                     VARCHAR2(4)
+                        ICD_GST_REGISTERED                                                         VARCHAR2(2)
+                        ICD_CUST_TYPE_CHNG_DT                                                      DATE
+                        ICD_BANK_TYPE                                                              VARCHAR2(50)
+                        ICD_SETTLEMENT_TYPE                                                        VARCHAR2(50)
+                        ICD_POA_PEND                                                               CHAR(1)
+                        ICD_BRKG_MDL_FLG                                                           CHAR(1)
+                        ICD_OLN_IMG_FINAL_SUCCESS                                                  VARCHAR2(1)
+                        ICD_PAL_STATUS                                                             VARCHAR2(5)
+                        ICD_DISC_BROK_ALLWD                                                        VARCHAR2(1)
+                        ICD_PAL_DWLD_REQ                                                           VARCHAR2(5)
+                        ICD_CUSTOMER_SOURCED_FROM                                                  VARCHAR2(15)
+                        ICD_DEMAT_MANDATE_CATGRY                                                   VARCHAR2(10)
+                        ICD_DEMAT_MANDATE_CATGRY_DT                                                DATE
+                        ICD_TRD_FNO_PREFERNCE                                                      VARCHAR2(1)
+                        ICD_TRD_EQUITY_PREFERNCE                                                   VARCHAR2(1)
+                        ICD_TRD_MCX_PREFERNCE                                                      VARCHAR2(1)
+                        ICD_TRD_CURRENCY_PREFERNCE                                                 VARCHAR2(1)
+                        ICD_ASBA_CONFIRMATION_FLAG                                                 VARCHAR2(1)
+                        ICD_ASBA_CONFIRMATION_DT                                                   DATE
+
+
+                    IAI_INFO_ACCOUNT_INFO
+                    ---------------------
+                    Name                                                  Null?    Type
+                    ----------------------------------------------------- -------- ------------------------
+                    IAI_SERIAL_NO                                         NOT NULL NUMBER(10)
+                    IAI_TYPE                                              NOT NULL VARCHAR2(50)
+                    IAI_BNK_ACCOUNT_NO                                             VARCHAR2(20)
+                    IAI_BNK_CUSTOMER_ID                                            VARCHAR2(10)
+                    IAI_BNK_BRANCH_CD                                              VARCHAR2(30)
+                    IAI_BNK_ACCOUNT_TYPE                                           VARCHAR2(3)
+                    IAI_BNK_ACCOUNT_EX_NEW_FLG                                     CHAR(1)
+                    IAI_BNK_ACCOUNT_OPEN_DT                                        DATE
+                    IAI_BNK_ACCOUNT_STATUS                                         NUMBER(2)
+                    IAI_MATCH_ACCOUNT_NO                                           VARCHAR2(10)
+                    IAI_MATCH_ACCOUNT_OPEN_DT                                      DATE
+                    IAI_MATCH_ACCOUNT_STATUS                                       NUMBER(2)
+                    IAI_ENTERED_BY                                                 VARCHAR2(100)
+                    IAI_ENTRY_DT                                                   DATE
+                    IAI_MODIFIED_BY                                                VARCHAR2(100)
+                    IAI_MODIFY_DT                                                  DATE
+                    IAI_EBA_UPLOAD_FLG                                             VARCHAR2(1)
+                    IAI_EBA_UPLOAD_DT                                              DATE
+                    IAI_IKIT_FLG                                                   CHAR(1)
+                    IAI_XCHANGE_NEXT_STATUS                                        NUMBER(2)
+                    IAI_CP_CODE                                                    VARCHAR2(12)
+                    IAI_CPCODE_STATUS                                              NUMBER(2)
+                    IAI_ATS_CLASS_STATUS                                           NUMBER(2)
+                    IAI_CDX_CLASS_STATUS                                           NUMBER(2)
+                    IAI_UCCTOATS_STATUS                                            NUMBER(2)
+                    IAI_UCCTOATS_DT                                                DATE
+                    IAI_CLASS_DOWNLOAD_RUN_NO                                      NUMBER(10)
+                    IAI_MODIFY_DT_RUN_NO                                           DATE
+                    IAI_BNK_ACCOUNT_FLAG                                           VARCHAR2(10)
+                    IAI_COMM_CLASS_STATUS                                          NUMBER(2)
+                    IAI_IFSC_CD                                                    VARCHAR2(25)
+                    IAI_BANK_TYPE                                                  VARCHAR2(100)
+                    IAI_ENABLE_FOR_DWLD                                            VARCHAR2(1)
+                    IAI_MF_UCC_BNK_SLOT_NO                                         NUMBER(2)
+                    IAI_BNK_CHANGE_DT                                              DATE
+                    IAI_BNK_ACCOUNT_FLAG_CHANGE_DT                                 DATE
+
+                Custom header Files:
+                --------------------
+                    needed Files:
+                    -------------
+                        fn_read_debug_lvl.pc OR fn_read_debug_lvl.c
+
+                    Avialable:
+                    ----------
+
+                        fn_log.c   (fn_userlog) (fn_errlog)
+
+                        fn_scklib_tap.c (fn_orstonse_char) (fn_timearr_to_long)
+
+                        fo_exg_pac_lib.C    (fn_sub_seq) (fn_get_fno_pack_seq)
+
+                        fo_exg_msgs.pc      (fn_get_reset_seq) (fn_orstonse_cntrct_desc)
+
+                        fn_host_to_nw_format_nse.c (fn_cnvt_htn_spd2L3L_req) (fn_cnvt_htn_net_hdr)
+
+                        fn_md5.c (fn_cal_md5digest)
+
+                        
+            2. fn_get_fno_pack_seq   in   (fo_exg_pack_lib) called from "fn_pack_sprdord_to_nse" and "fn_pack_ordnry_ord_to_nse"
+            -------------------
+
+                MACROS:
+                ------
+                    DEBUG_MSG_LVL_5 ----> Not Clear 
+                    DEBUG_MSG_LVL_0 ----> Not Clear 
+                    DEBUG_MSG_LVL_3 ----> Not Clear 
+
+
+                    GET_PLACED_SEQ  ----->  'P'  // "from fo.h"
+
+                    SQLCODE  ----->  sqlca.sqlcode  // "from fo.h"
+                    SQLMSG   ----->  sqlca.sqlerrm.sqlerrmc // "from fo.h"
+
+                    DEFMSG   ----->  "Null message" // "from fo.h"
+
+                Function:
+                ---------
+                    SETLEN(c_trd_dt)    // fo.h
+
+                    fn_errlog(c_ServiceName, "L31180", DEFMSG, c_errmsg)                    //fn_log.c
+                    fn_userlog(c_ServiceName, "c_pipe_id  :%s:", ptr_st_i_seq->c_pipe_id)   //fn_log.c
+
+                Strcutures:
+                -----------
+                    st_pk_sequence 
+                        char c_rqst_typ; - Request type.
+                        char c_trd_dt[23]; - Trade date.
+                        char c_pipe_id; - Pipe ID.
+                        int i_seq_num; - Sequence number.
+                
+                SQL Query:
+                ----------
+
+                    UPDATE fsp_fo_seq_plcd
+                    SET fsp_seq_num = fsp_seq_num + 1
+                    WHERE fsp_pipe_id = :ptr_st_i_seq->c_pipe_id
+                    AND fsp_trd_dt = to_date(:c_trd_dt, 'dd-Mon-yyyy')
+                    RETURNING fsp_seq_num INTO :ptr_st_i_seq->i_seq_num;
+
+                    This query updates the "fsp_seq_num" field in the "fsp_fo_seq_plcd" table by incrementing it by 1 where 
+                    the "fsp_pipe_id" matches "ptr_st_i_seq->c_pipe_id" and the "fsp_trd_dt" matches the "c_trd_dt" converted 
+                    to a date. The updated sequence number is then returned into "ptr_st_i_seq->i_seq_num".
+
+                Tables:
+                -------
+
+                    fsp_fo_seq_plcd 
+
+                Custome Header:
+                ---------------
+                    fo.h (SETLEN)
+
+                    fn_log.c (fn_errlog) (fn_userlog)
+
+
+            3. fn_pack_ordnry_ord_to_nse:  in   (fo_exg_pack_lib)
+                --------------------------
+                discription about this function 
+
+                    5 structures as arguments 
+
+                                    vw_xchngbook *ptr_st_rqst1  
+                                    vw_orderbook  *ptr_st_ord1
+                                    vw_nse_cntrct *ptr_st_nse_cnt1
+                                    st_opm_pipe_mstr *ptr_st_opm_pipe_mstr
+
+                                    // All 4 structures (above) will be treated as input
+                                    // this last structure will be treated as output structure. 
+                                    //means all the inputs will be stored here but with a process.
+
+                                    st_req_q_data *ptr_st_q_packet
+
+                        // there are two local structure defined in the fuunction.
+
+                        struct st_oe_reqres st_ord_ent; // first four structure will be packed in this structure
+                        struct st_exch_msg st_exch_message; // in this structure there is one structure and one union
+                                                            //    1. struct st_net_hdr st_net_header; // in this structure  we have "Message Length" , "Sequence_Number" , "c_checksum[16]"
+                                                            //    2. union st_exch_snd_msg st_exch_sndmsg; // in this union we will be using "struct st_oe_reqres st_oe_res"
+
+                Macros:
+                -------
+
+                    DEBUG_MSG_LVL_4
+                    DEBUG_MSG_LVL_1
+                    DEBUG_MSG_LVL_3
+
+                    LEN_ORD_REFACK
+
+                    LEN_ALPHA_CHAR
+
+                    BOARD_LOT_IN
+                    ORDER_MOD_IN
+                    ORDER_CANCEL_IN
+
+                    NEW
+                    MODIFY
+                    CANCEL
+
+                    TRADER
+                    CORPORATE_MANAGER
+                    BRANCH_MANAGER
+
+                    LEN_TIME_STAMP
+                    LEN_BROKER_ID
+                    LEN_ACCOUNT_NUMBER
+
+                    STOP_LOSS_MIT_ORDER
+                    REGULAR_LOT_ORDER
+
+                    NSE_BUY
+                    NSE_SELL
+
+                    LEN_SETTLOR
+
+                    SQLCODE
+                    SQLMSG
+                    BRKR_PLCD
+                    NSE_PRO
+                    NSE_CLIENT
+                    LEN_PAN
+
+                    FO_AUTO_MTM_ALG_ID
+                    FO_AUTO_MTM_ALG_CAT_ID
+                    FO_PRICE_IMP_ALG_ID
+                    FO_PRICE_IMP_ALG_CAT_ID
+                    FO_PRFT_ORD_ALG_ID
+                    FO_PRFT_ORD_ALG_CAT_ID
+                    FO_FLASH_TRD_ALG_ID
+                    FO_FLASH_TRD_ALG_CAT_ID
+                    FO_FOGTT_ALG_ID
+                    FO_FOGTT_ALG_CAT_ID
+                    FO_NON_ALG_ID
+                    FO_NON_ALG_CAT_ID
+
+                    GET_PLACED_SEQ
+
+                    LIBMSG
+
+                Structure:
+                ----------
+
+                    vw_orderbook{
+                        c_pro_cli_ind
+                        c_cln_mtch_accnt
+                        c_ordr_flw
+                        l_ord_tot_qty
+                        l_exctd_qty
+                        l_exctd_qty_day
+                        c_settlor
+                        c_ctcl_id
+                        c_ack_tm
+                        c_prev_ack_tm
+                        c_xchng_ack
+                        c_settlor
+                    }
+
+                    vw_xchngbook{
+                        c_req_typ
+                        l_dsclsd_qty
+                        c_slm_flg
+                        l_ord_lmt_rt
+                        l_stp_lss_tgr
+                        c_ord_typ
+                        l_ord_tot_qty
+                        c_valid_dt
+                        l_ord_seq
+                        c_pipe_id
+                        c_mod_trd_dt
+                    }
+
+                    st_opm_pipe_mstr{
+                        li_opm_brnch_id
+                        c_opm_trdr_id
+                        c_xchng_brkr_id
+                        si_user_typ_glb
+                        c_xchng_brkr_id
+                    }
+
+                    vw_nse_cntrct{
+                        c_prd_typ
+                        c_ctgry_indstk
+                        c_symbol
+                        l_ca_lvl
+                        l_token_id
+
+                    }
+
+                    st_hdr{
+                        li_trader_id
+                        li_log_time
+                        c_alpha_char
+                        si_transaction_code
+                        si_error_code
+                        c_filler_2
+                        c_time_stamp_1
+                        c_time_stamp_2
+                        si_message_length
+                    }
+
+                    st_oe_reqres{
+                        st_hdr
+                        ll_lastactivityref
+                        c_participant_type
+                        c_filler_1
+                        si_competitor_period
+                        si_solicitor_period
+                        c_modified_cancelled_by
+                        c_filler_2
+                        si_reason_code
+                        c_filler_3
+                        l_token_no
+                        struct st_contract_desc st_con_desc
+                        c_counter_party_broker_id
+                        c_filler_4
+                        c_filler_5
+                        c_closeout_flg
+                        c_filler_6
+                        si_order_type
+                        d_order_number
+                        c_account_number
+                        si_book_type
+                        si_buy_sell_indicator
+                        li_disclosed_volume
+                        li_disclosed_volume_remaining
+                        li_volume
+                        li_total_volume_remaining
+                        li_volume_filled_today
+                        li_price
+                        li_trigger_price
+                        li_good_till_date
+                        li_entry_date_time
+                        li_minimum_fill_aon_volume
+                        li_last_modified
+                        struct st_order_flags st_ord_flg
+                        si_branch_id
+                        li_trader_id
+                        c_broker_id
+                        i_ordr_sqnc
+                        c_open_close
+                        c_settlor
+                        si_pro_client_indicator
+                        c_pan
+                        si_settlement_period
+                        c_cover_uncover
+                        c_giveup_flag
+                        l_algo_id
+                        si_algo_category
+                        c_reserved
+                        d_nnf_field
+                        d_filler19
+                    }
+                    st_order_flags{
+                        flg_ato
+                        flg_market
+                        flg_sl
+                        flg_mit
+                        flg_day
+                        flg_gtc
+                        flg_ioc
+                        flg_aon
+                        flg_mf
+                        flg_matched_ind
+                        flg_traded
+                        flg_modified
+                        flg_frozen
+                        flg_filler1
+
+                    }
+
+
+                    st_contract_desc{
+                        c_instrument_name
+                        c_symbol
+                        li_expiry_date
+                        li_strike_price
+                        c_option_type
+                        si_ca_level
+                    }
+
+                    st_exch_msg{ // (used in above struture)
+                        struct st_net_hdr st_net_header; // <-------------------------------(this one is used)
+                        union st_exch_snd_msg st_exch_sndmsg; // <-------------------------------(this one is used)
+                        }
+
+
+                    struct st_net_hdr // (used in above structure st_exch_msg) (Not used in the function)
+                    {
+                        short si_message_length;
+                        int i_seq_num;
+                        unsigned char c_checksum[16];
+                    };
+
+                    union st_exch_snd_msg //(This union is used in st_exch_msg )
+                    {
+                        struct st_sign_on_req st_signon_req;
+                        struct st_system_info_req st_sysinf_req;
+                        struct st_update_local_database st_updlcdb_req;
+                        struct st_message_download st_msg_dwld;
+                        struct st_oe_reqres st_oe_res; //<-------------------------------(this one is used) (it is next structure"just below this union" )
+                        struct st_oe_reqres_tr st_oe_req_tr; /*** Added in Ver 2.9 ***/
+                        struct st_om_rqst_tr st_om_req_tr;	 /*** Added in Ver 2.9 ***/
+
+                        struct st_spd_oe_reqres st_spdoe_reqres; 
+
+                        struct st_ex_pl_reqres st_expl_reqres;
+                    };
+
+                Functionns:
+                -----------
+
+                        fn_userlog(c_ServiceName, "esp_id:%s: algo_id:%s: c_source_flg :%c:", c_esp_id, c_algo_id, c_source_flg); // fn_log.c
+                        fn_errlog(c_ServiceName, "L31055", " Invalid Request Type ", c_err_msg);                                  // fn_log.c
+
+
+                        fn_orstonse_char(st_ord_ent.st_hdr.c_alpha_char, LEN_ALPHA_CHAR, " ", 1);                   // fn_scklib_tap.c
+                        fn_timearr_to_long(ptr_st_rqst1->c_valid_dt, &st_ord_ent.li_good_till_date);                // fn_scklib_tap.c
+
+
+                        fn_cnvt_htn_oe_reqres(&st_ord_ent);                                 //fn_host_to_nw_format_nse.c
+                        fn_cnvt_htn_net_hdr(&st_exch_message.st_net_header);               // fn_host_to_nw_format_nse.c 
+
+
+                        fn_get_reset_seq(ptr_st_rqst1->c_pipe_id, ptr_st_rqst1->c_mod_trd_dt, GET_PLACED_SEQ, &i_snd_seq, c_ServiceName, c_err_msg); //fo_exg_msgs.pc
+                        
+                        fn_cal_md5digest((void *)&st_ord_ent, sizeof(st_ord_ent), digest); // fn_md5.c
+
+                        fn_get_fno_pack_seq(c_ServiceName, &st_s_sequence, c_err_msg); // fo_exg_pack_lib.pc
+
+                Querries:
+                --------
+                        MEMSET(sql_icd_cust_type);
+                    EXEC SQL
+                        SELECT ICD_CUST_TYPE
+                            INTO : sql_icd_cust_type
+                                    FROM ICD_INFO_CLIENT_DTLS,
+                                IAI_INFO_ACCOUNT_INFO
+                                    WHERE ICD_SERIAL_NO = IAI_SERIAL_NO
+                                        AND IAI_MATCH_ACCOUNT_NO = : ptr_st_ord1->c_cln_mtch_accnt;
+
+                Tables:
+                -------
+                        ICD_INFO_CLIENT_DTLS 
+                        IAI_INFO_ACCOUNT_INFO   
+
+                Custom Headers:
+                --------------
+                        fn_log.c           (fn_userlog) (fn_errlog)
+
+                        fn_scklib_tap.c     (fn_orstonse_char) (fn_timearr_to_long)
+
+                        fn_host_to_nw_format_nse.c  (fn_cnvt_htn_oe_reqres) (fn_cnvt_htn_net_hdr)
+
+                        fo_exg_msgs.pc  (fn_get_reset_seq)
+
+                        fn_md5.c     (fn_cal_md5digest)
+
+            4. fn_sub_seq      in   (fo_exg_pack_lib) called from "fn_pack_sprdord_to_nse"
+            ----------
+        
+        Custom Headers with all Function used in this file:
+        --------------------------------------------------
+
+            fn_log.c
+            --------
+                fn_userlog
+                fn_errlog
+
+            fn_scklib_tap.c
+            ---------------
+                fn_orstonse_char
+                fn_timearr_to_long
+
+            fo_exg_pac_lib.C
+            ----------------
+                fn_sub_seq
+                fn_get_fno_pack_seq
+                
+            fo_exg_msgs.pc
+            --------------
+                fn_get_reset_seq
+                fn_orstonse_cntrct_desc
+
+            fn_host_to_nw_format_nse.c
+            --------------------------
+                fn_cnvt_htn_spd2L3L_req
+                fn_cnvt_htn_net_hdr
+                fn_cnvt_htn_oe_reqres
+
+            fn_md5.c
+            --------
+                fn_cal_md5digest
+
+            fo.h
+            ----
+                SETLEN
+
+
+
+
+    cln_esr_clnt:
+    -------------
+
+        Functions:
+        ----------
+
+            fn_bat_init : in "cln_esr_clnt" and i think called from main
+            -----------
+
+                MACROS:
+                -------
+                    MEMSET()
+
+                    OPM_XCHNG_CD
+                    TRADING_SECTION
+                    COMMON
+                    DEBUG_MSG_LVL_0
+                    DEBUG_MSG_LVL_3
+                    EXG_NXT_TRD_DT
+                    EXG_SEC_TM
+                    EXG_PART_TM
+                    EXG_INST_TM
+                    EXG_IDX_TM
+                    SQLCODE
+                    SQLMSG
+                    LIBMSG
+                    LOG_DUMP
+                    RELATIVE
+                    UNXMSG
+                    SIGUSR2
+                    SIGUSR1
+                    RESET_PLACED_SEQ
+                    LEN_DATE (not used in this function but used in file)
+
+                Structure:
+                ----------
+                    Didn't Find any
+                
+                Functions used in  "cln_esr_clnt"
+                --------------------------------
+
+                    MEMSET(c_tap_address) // fo.h
+
+                    fn_userlog(c_ServiceName, "Usage - cln_esr_clnt <tag qualifier> <Exchange cd> <Pipe id>") // fn_log.c 
+                    fn_errlog(c_ServiceName, "S31010", SQLMSG, c_errmsg);                                     // fn_log.c
+
+                    fn_init_ddr_pop(argv[3], TRADING_SECTION, COMMON); // fn_ddr.c
+                    
+                    fn_crt_n_flushq(&i_snd_qid, "SEND_QUEUE", c_ServiceName, c_errmsg); // cln_esr_clnt  (done)
+                    fn_crt_tap_sck(&i_tap_sck_id, "TAP_IP_ADDRESS", "TAP_PORT", c_tap_address, /*** Added in Ver 2.9 ***/ c_ServiceName, c_errmsg); // cln_esr_clnt
+                    fo_call_conclnt(c_rqst_typ, c_spl_flg, "cln_esr_clnt", c_errmsg); // cln_esr_clnt
+                    CLN_ESR_CLNT(int argc, char *argv[]) // Service in "cln_esr_clnt"
+
+                    system(c_command); ???? (Not FOUND)
+                    
+                    
+
+                    fn_get_prcs_spc(c_ServiceName, c_dump_msg_flg_nm); //fn_env.c
+
+                    fn_create_file(&ptr_rcv_msgs_file, c_fileName, "a+", RELATIVE, c_ServiceName, c_errmsg); //fn_fil_log.c
+
+                    fn_sck_init(); //fn_scklib_tap.c
+
+                    fn_set_sgn_hnd(SIGUSR1, fn_sigusr1_hnd, c_ServiceName, c_errmsg) // fn_signal.c
+
+                    fn_begintran(c_ServiceName, c_errmsg); // fn_tuxlic.c
+                    fn_committran(c_ServiceName, i_trnsctn, c_errmsg); // fn_tuxlic.c
+
+                    fn_get_reset_seq(sql_c_pipe_id, sql_c_nxt_trd_date.arr, RESET_PLACED_SEQ, &i_snd_seq, c_ServiceName, c_errmsg); //fo_exg_msgs.pc
+
+                    
+
+
+                SQL Querries:
+                -------------
+
+                   EXEC SQL
+                    SELECT OPM_XCHNG_CD
+                        INTO : sql_c_xchng_cd
+                                FROM OPM_ORD_PIPE_MSTR
+                                    WHERE OPM_PIPE_ID = : sql_c_pipe_id; 
+
+                    -------------------
+                    EXEC SQL
+                        SELECT to_char(EXG_NXT_TRD_DT, 'dd-mon-yyyy'),
+                        to_char(EXG_NXT_TRD_DT, 'yyyymmdd'),
+                        to_char(EXG_SEC_TM, 'dd-mon-yyyy'),
+                        to_char(EXG_PART_TM, 'dd-mon-yyyy'),
+                        to_char(EXG_INST_TM, 'dd-mon-yyyy'),
+                        to_char(EXG_IDX_TM, 'dd-mon-yyyy')
+                            into : sql_c_nxt_trd_date,
+                        : sql_c_trd_ref,
+                        : sql_sec_tm,
+                        : sql_part_tm,
+                        : sql_inst_tm,
+                        : sql_idx_tm
+                            FROM EXG_XCHNG_MSTR
+                                WHERE EXG_XCHNG_CD = : sql_c_xchng_cd;
+
+                    ------------------------
+                    EXEC SQL
+                       UPDATE opm_ord_pipe_mstr
+                       SET opm_login_stts = 0,
+                        OPM_IPO_SSSN_ID = : c_tap_address /*** Added in Ver 2.9 ***/
+                        WHERE opm_pipe_id = : sql_c_pipe_id;
+                
+                Tables:
+                -------
+
+                    OPM_ORD_PIPE_MSTR
+                    EXG_XCHNG_MSTR
+                    opm_ord_pipe_mstr
+
+                Custom Header FIles:
+                --------------------
+                    
+                    fo.h
+                    -----
+                        MEMSET(c_tap_address)
+
+                    fn_log.c
+                    --------
+                        fn_userlog(c_ServiceName, "Usage - cln_esr_clnt <tag qualifier> <Exchange cd> <Pipe id>")
+                        fn_errlog(c_ServiceName, "S31010", SQLMSG, c_errmsg);
+
+                    fn_ddr.c
+                    --------
+                        fn_init_ddr_pop(argv[3], TRADING_SECTION, COMMON)
+
+                    cln_esr_clnt.pc
+                    ---------------
+                        fn_crt_n_flushq(&i_snd_qid, "SEND_QUEUE", c_ServiceName, c_errmsg)
+                        fn_crt_tap_sck(&i_tap_sck_id, "TAP_IP_ADDRESS", "TAP_PORT", c_tap_address, c_ServiceName, c_errmsg)
+                        fo_call_conclnt(c_rqst_typ, c_spl_flg, "cln_esr_clnt", c_errmsg)
+                        CLN_ESR_CLNT(int argc, char *argv[]) // service
+                    fn_env.c
+                    --------
+                        fn_get_prcs_spc(c_ServiceName, c_dump_msg_flg_nm)
+
+                    fn_fil_log.c
+                    ------------
+                        _file(&ptr_rcv_msgs_file, c_fileName, "a+", RELATIVE, c_ServiceName, c_errmsg)
+
+                    fn_scklib_tap.c
+                    ---------------
+                        fn_sck_init()
+
+                    fn_signal.c
+                    -----------
+                        fn_set_sgn_hnd(SIGUSR1, fn_sigusr1_hnd, c_ServiceName, c_errmsg)
+
+                    fn_tuxlic.c
+                    -----------
+                        fn_begintran(c_ServiceName, c_errmsg)
+                        fn_committran(c_ServiceName, i_trnsctn, c_errmsg)
+
+                    fo_exg_msgs.pc
+                    --------------
+                    fn_get_reset_seq(sql_c_pipe_id, sql_c_nxt_trd_date.arr, RESET_PLACED_SEQ, &i_snd_seq, c_ServiceName, c_errmsg)
+
+                    system() (Standard library function, no specific file)
+
+
+            fn_crt_n_flushq: in "cln_esr_clnt" and called from "fn_bat_init()" service
+            ----------------
+
+                MACROS:
+                -------
+                    LIBMSG  ---------> "Error in library function" from "fo.h"
+                    CLIENT ----------> Not found
+
+                Structure:
+                ----------
+                    there are no direct structure used here.
+                
+
+                functions used in "fn_crt_n_flushq()":
+                --------------------------------------
+
+                    fn_get_prcs_spc(c_ServiceName, ptr_c_qname) // fn_env.c
+
+                    fn_errlog(c_ServiceName, "S31085", LIBMSG, c_errmsg) // fn_log.c
+
+                    fn_crt_msg_q(ptr_i_qid, i_msgq_typ, CLIENT, c_ServiceName, c_errmsg) // fn_msgq.c
+
+                    fn_write_msgq_file(ptr_i_qid, c_ServiceName, c_errmsg); //cln_esr_clnt.c
+
+                    fn_flush_q(*ptr_i_qid, c_ServiceName, c_errmsg); // fn_msgq.c
+
+                SQL Querry:-
+                -----------
+                    No SQL Querry
+                
+                Tables:
+                ------
+                    No Tables
+
+                Custom Header FIles:
+                --------------------
+
+                    fn_env.c
+                    --------
+                        fn_get_prcs_spc(c_ServiceName, ptr_c_qname)
+
+                    fn_log.c
+                    --------
+                        fn_errlog(c_ServiceName, "S31085", LIBMSG, c_errmsg)
+
+                    fn_msgq.c
+                    ---------
+                        fn_crt_msg_q(ptr_i_qid, i_msgq_typ, CLIENT, c_ServiceName, c_errmsg)
+                        fn_flush_q(*ptr_i_qid, c_ServiceName, c_errmsg)
+
+                    cln_esr_clnt.c
+                    --------------
+                        fn_write_msgq_file(ptr_i_qid, c_ServiceName, c_errmsg)
+
+            fn_write_msgq_file:  in "cln_esr_clnt" and called from "fn_crt_n_flushq()" function
+            -------------------
+
+                MACROS:
+                -------
+                    DEBUG_MSG_LVL_3  ----> Not Clear (header is not Avialable Yet)
+
+                    RELATIVE   -------> found in a file called "wingdi.h" but it is not included in the header
+
+                    UNXMSG    ---------> #define UNXMSG strerror(errno) found in "fo.h"
+
+                    LIBMSG  -----------> "Error in library function" found in "fo.h"
+
+                    MEMSET  -----------> #define MEMSET(A) memset(&A,'\0',sizeof(A)) found in "fo.h"
+
+                Strcutures:
+                ----------
+
+                    struct st_req_q_data st_req_data;
+
+                    //I think, This structure is used to hold data read from the message queue, which is then written to a file.
+
+                    FILE *ptr_queue_msgs_file; 
+                    
+                    // this is a structure defined with name "typedef struct _iobuf" in "stdio.h" 
+
+                functions used in "fn_write_msgq_file ()"
+                -----------------------------------------
+                    
+                        sprintf(c_fileName, "trade/%s/%s/msgs_sendq_before_flush.txt", sql_c_xchng_cd, sql_c_pipe_id) // this function is used to format the string and save it in the buffer "c_fileName"
+
+                        fn_userlog(c_ServiceName, "path name is :%s:", c_fileName); // "fn_log.c"
+                        fn_errlog(c_ServiceName, "S31215", LIBMSG, c_errmsg) // "fn_log.c"
+
+                        fn_create_file(&ptr_queue_msgs_file, c_fileName, "a+", RELATIVE, c_ServiceName, c_errmsg); //fn_fil_log.c
+
+                        fn_get_no_of_msg(*ptr_i_qid, &i_queue_cnt, c_ServiceName, c_errmsg) //fn_msgq.c
+
+                        
+
+                        MEMSET(st_req_data) // fo.h
+
+                        fn_read_msg_q(*ptr_i_qid, &st_req_data, &li_queue_msg_size, c_ServiceName, c_errmsg) //fn_msgq.c
+
+                        fn_fprint_log(ptr_queue_msgs_file, c_tap_header, (void *)(&st_req_data.st_exch_msg_data), c_ServiceName, c_errmsg) //fn_fo_fprint.c
+
+                        fn_destroy_file(ptr_queue_msgs_file)//fn_fil_log.c
+
+               
+                There is No SQL Querry and Tables in this function.
+
+                
+                Custom Header FIles:
+                --------------------
+
+                        fn_log.c
+                        --------
+                            fn_userlog(c_ServiceName, "path name is :%s:", c_fileName);
+                            fn_errlog(c_ServiceName, "S31215", LIBMSG, c_errmsg);
+
+                        fn_fil_log.c
+                        ------------
+                            fn_create_file(&ptr_queue_msgs_file, c_fileName, "a+", RELATIVE, c_ServiceName, c_errmsg);
+                            fn_destroy_file(ptr_queue_msgs_file);
+
+                        fn_msgq.c
+                        ---------
+                            fn_get_no_of_msg(*ptr_i_qid, &i_queue_cnt, c_ServiceName, c_errmsg);
+                            fn_read_msg_q(*ptr_i_qid, &st_req_data, &li_queue_msg_size, c_ServiceName, c_errmsg);
+
+                        fo.h
+                        ----
+                            MEMSET(st_req_data);
+
+                        fn_fo_fprint.c
+                        --------------
+                            fn_fprint_log(ptr_queue_msgs_file, c_tap_header, (void *)(&st_req_data.st_exch_msg_data), c_ServiceName, c_errmsg);
+
+            fn_crt_tap_sck:  in "cln_esr_clnt" and called from "fn_bat_init()" service
+            ---------------
+
+                MACROS:
+                -------
+                    LIBMSG -----> "fo.h"
+                    DEBUG_MSG_LVL_0 ------> (header is not Avialable Yet)
+                
+                Structure:
+                ----------
+                    Didn't find any.
+                
+                Functions used in "fn_crt_tap_sck":
+                ----------------------------------- 
+
+                        fn_get_prcs_spc(c_ServiceName, ptr_c_tap_addr_nm) //fn_env.c
+
+                        fn_errlog(c_ServiceName, "S31105", LIBMSG, c_errmsg) // "fn_log.c "
+                        fn_userlog(c_ServiceName, "socket connected")        // fn_log.c 
+
+                        fn_crt_clnt_sck(c_tap_ip_addr, i_tap_port_no, ptr_i_sck_id, c_ServiceName, c_errmsg) // fn_scklib_tap.c
+
+
+
+                There is NO SQL query and NO Table.
+
+
+                Custom Header FIles:
+                --------------------
+
+                        fn_env.c
+                        --------    
+                            fn_get_prcs_spc(c_ServiceName, ptr_c_tap_addr_nm)
+
+                        fn_log.c
+                        --------
+                            fn_errlog(c_ServiceName, "S31105", LIBMSG, c_errmsg);
+                            fn_userlog(c_ServiceName, "socket connected");
+
+                        fn_scklib_tap.c
+                        ---------------
+                            fn_crt_clnt_sck(c_tap_ip_addr, i_tap_port_no, ptr_i_sck_id, c_ServiceName, c_errmsg);
+
+
+            fo_call_conclnt: in "cln_esr_clnt" and called from "fn_bat_init()" service
+            ----------------
+
+                MACROS:
+                -------
+
+                    FBFR32       --------> NOT found
+                    
+                    MIN_FML_BUF_LEN        /**** Minimum buffer length ****/ #define MIN_FML_BUF_LEN  1024 ,  in "fo.h"
+
+                    FFO_QUEUE_NAME   -----> NOT found
+                    FFO_SPL_FLG     -----> NOT found
+                    FFO_PIPE_ID     -----> NOT found
+                    FFO_RQST_TYP    -----> NOT found
+                    FFO_USR_ID      -----> NOT found
+                    FFO_OPERATION_TYP       -----> NOT found
+                    FFO_STATUS_FLG          -----> NOT found
+                    FFO_ORD_TOT_QTY         -----> NOT found
+
+                    TPNOTRAN        -----> NOT found
+                    TPNOREPLY       -----> NOT found
+                    TPMSG       #define TPMSG  tpstrerror(tperrno) ,  in 'fo.h' 
+
+                Strcutures:
+                ----------
+                        FBFR32 -----> I think it is a structure
+
+                Functions used in "fo_call_conclnt":
+                -----------------------------------
+
+                        fn_userlog(c_ServiceName, "inside fo_call_conclnt %s", sql_c_pipe_id);  //fn_log.h
+                        fn_errlog(c_ServiceName, "S31220", TPMSG, c_errmsg);                    //fn_log.h
+
+                        tpalloc("FML32", NULL, MIN_FML_BUF_LEN); -----> NOT found
+                        Fadd32(ptr_fml_Ibuf, FFO_QUEUE_NAME, (char *)sql_c_pipe_id, 0)  -----> NOT found
+                        tpacall("SFO_CON_CLNT", (char *)ptr_fml_Ibuf, 0, TPNOTRAN | TPNOREPLY); -----> NOT found
+                        tpfree((char *)ptr_fml_Ibuf); -----> NOT found
+
+                        MEMSET(c_command); //"fo.h"
+                        
+                        system(c_command); -----> NOT found
+
+                        
+
+
+
+                There is NO SQL query and NO Table.
+
+
+
+                Custom Header FIles:
+                --------------------
+
+                        Look at the "Functions used in 'fo_call_conclnt'" there are many header files which are needed
+
+                        Avialable files:
+                        ----------------
+
+                            fn_log.h 
+                            --------
+                                fn_userlog()
+                                fn_errlog
+                            
+                            fo.h:
+                            ----
+                                MEMSET(c_command)
+
+
+            CLN_ESR_CLNT(int argc, char *argv[]): in "cln_esr_clnt" and called from "fn_bat_init()" service
+            ------------------------------------
+
+                MACROS:
+                -------
+
+                    DEBUG_MSG_LVL_0 -------> (file is not Avialable)
+
+                    PTHREAD_SCOPE_SYSTEM   ---------> "NOT FOUND"
+                    SIGUSR1                ---------> "NOT FOUND"
+
+
+                    EXIT_BY_SIGUSR2  --------->  # define EXIT_BY_SIGUSR2 1  , in "fo_exg_esr_lib.h"
+                    EXIT_BY_RCV_THRD --------->   # define EXIT_BY_RCV_THRD 2   , in "fo_exg_esr_lib.h"
+                    EXIT_BY_SND_THRD --------->   # define EXIT_BY_SND_THRD 3   , in "fo_exg_esr_lib.h"
+
+                Structures:
+                -----------
+                    there is no structure that is used directly.
+
+
+                Functions used in "CLN_ESR_CLNT(int argc, char *argv[])" service:
+                -----------------------------------------------------------------
+
+                    Standard Library Functions:  (these are all the function used from std libaries)
+                    ---------------------------
+                        strcpy: Copies a string.
+                        pthread_attr_init: Initializes thread attributes.
+                        pthread_mutex_init: Initializes mutexes.
+                        pthread_cond_init: Initializes condition variables.
+                        pthread_attr_setscope: Sets the scope of thread attributes.
+                        pthread_create: Creates a new thread.
+                        pthread_mutex_lock: Locks a mutex.
+                        pthread_mutex_unlock: Unlocks a mutex.
+                        pthread_kill: Sends a signal to a thread.
+                        pthread_join: Waits for a thread to terminate.
+                        pthread_attr_destroy: Destroys thread attributes.
+
+                    Custom Functions:
+                    -----------------
+                        fn_userlog(c_ServiceName, "Before starting threads") // fn_log.c
+                        fn_errlog(c_ServiceName, "S31005", "Invalid exit type", c_errmsg); //fn_log.c
+                        fn_thrd_cond_wait(&cond_thrd_cntrl, &mut_thrd_cntrl, c_ServiceName, c_errmsg) // fn_pthread.c
+
+                        fn_snd_thrd: Function executed by the send thread. // cln_esr_clnt.pc
+                        fn_rcv_thrd: Function executed by the receive thread. // cln_esr_clnt.pc
+                        
+
+                There is NO SQL query and NO Table.
+
+                Custom Header FIles:
+                --------------------
+                    fn_log.c :
+                    ----------
+                        fn_userlog()
+                        fn_errlog()
+
+                    fn_pthread.c
+                    ------------
+                        fn_thrd_cond_wait()
+
+            
+            fn_snd_thrd : in "cln_esr_clnt" and called from "CLN_ESR_CLNT" service
+            -------------
+
+                MACROS:
+                -------
+
+                    SIGUSR2 -------------------> NOT FOUND
+
+                    SIG_BLOCK   ----------------> NOT FOUND
+
+                    DONT_EXIT    ----------------> #define DONT_EXIT  1  , in "fo.h"
+
+                    DEBUG_MSG_LVL_3 -------------> NOT FOUND
+
+                    LIBMSG ------------------------> #define LIBMSG "Error in library function" , in "fo.h"
+                    DEBUG_MSG_LVL_2 ------------> NOT FOUND
+                    EXIT    ------------------> #define EXIT       0 , in "fo.h"
+
+                    DEBUG_MSG_LVL_0 ------------> NOT FOUND
+
+                    LOGIN_WITH_OPEN_ORDR_DTLS  ---------------------> NOT FOUND
+                    LOGIN_WITHOUT_OPEN_ORDR_DTLS ---------------------> NOT FOUND
+
+                    SIGN_OFF_REQUEST_IN  ---------------------> NOT FOUND
+
+                    DOWNLOAD_REQUEST ---------------------> NOT FOUND
+
+                    BOARD_LOT_IN ---------------------> NOT FOUND
+                    ORDER_MOD_IN    ---------------------> NOT FOUND
+                    ORDER_CANCEL_IN ---------------------> NOT FOUND
+                    BOARD_LOT_IN_TR ---------------------> NOT FOUND
+                    ORDER_MOD_IN_TR ---------------------> NOT FOUND
+                    ORDER_CANCEL_IN_TR ---------------------> NOT FOUND
+                    SP_BOARD_LOT_IN ---------------------> NOT FOUND
+                    TWOL_BOARD_LOT_IN ---------------------> NOT FOUND
+                    THRL_BOARD_LOT_IN ---------------------> NOT FOUND
+                    SP_ORDER_MOD_IN ---------------------> NOT FOUND
+                    SP_ORDER_CANCEL_IN ---------------------> NOT FOUND
+                    EX_PL_ENTRY_IN ---------------------> NOT FOUND
+                    EX_PL_MOD_IN ---------------------> NOT FOUND
+                    EX_PL_CXL_IN ---------------------> NOT FOUND
+                     
+                    LOG_DUMP  ---------------------> NOT FOUND
+                    EXIT_BY_SND_THRD ---------------------> NOT FOUND
+
+                Structures:
+                -----------
+
+                    struct st_req_q_data
+                    struct st_exch_msg
+                    struct st_int_header
+                    struct st_message_download // I think, this structure will not be used by us.
+                    struct st_oe_reqres
+                    struct st_oe_reqres_tr 
+                    struct st_om_rqst_tr
+                    struct st_spd_oe_reqres
+                    struct st_ex_pl_reqres
+                    struct st_exch_msg_data
+
+                    // many structures will not be used in our application.
+
+
+                functions used in "fn_snd_thrd" :
+                ---------------------------------
+
+                    sigemptyset(&new) -----------------------> not found
+                    sigaddset(&new, SIGUSR2) -------------------> not found
+
+                    pthread_sigmask(SIG_BLOCK, &new, NULL) -------------------------> not found
+
+                    fn_userlog(c_ServiceName, "Before Entering while")  // fn_log.c
+                    fn_errlog(c_ServiceName, "L31300", LIBMSG, c_errmsg) // fn_log.c
+
+                    MEMSET(st_req_data) // fo.h
+
+                    fn_read_msg_q(i_snd_qid, &st_req_data, &li_queue_msg_size, c_ServiceName, c_errmsg) // fn_msgq.c
+                    
+                    pthread_mutex_unlock(&mut_snd_rcv_cntrl) // ----------------> NOT found (i think it is std lib function)
+                    pthread_mutex_lock(&mut_snd_rcv_cntrl) // ----------------> NOT found (i think it is std lib function)
+
+
+                    fn_do_xchng_logon(&(st_req_data.st_exch_msg_data),ptr_snd_msgs_file, c_ServiceName, c_errmsg) // fo_exg_esr_lib.pc
+
+                    fn_logout_res(sql_c_xchng_cd, sql_c_pipe_id, c_ServiceName, c_errmsg) // fo_exg_esr_lib.pc
+
+                    fn_gettime() // cln_esr_clnt.pc
+
+                    fn_writen(i_tap_sck_id, (void *)(&st_req_data.st_exch_msg_data), li_send_tap_msg_size, c_ServiceName, c_errmsg) // fn_scklib_tap.C
+
+                    fn_fprint_log(ptr_snd_msgs_file, c_tap_header, (void *)(&st_req_data.st_exch_msg_data), c_ServiceName, c_errmsg); //fn_fo_fprint.c
+
+                    fn_lock_sig_unlock(&cond_thrd_cntrl, &mut_thrd_cntrl, &i_cond_thrd_cntrl, EXIT_BY_SND_THRD); //fn_pthread.c
+
+                
+                There is NO SQL query and NO Table. 
+
+
+                Custom Header FIles:
+                --------------------
+
+                    fn_log.c
+                    --------
+                        fn_userlog(c_ServiceName, "Before Entering while")
+                        fn_errlog(c_ServiceName, "L31300", LIBMSG, c_errmsg)
+
+                    fo.h
+                    -----
+                        MEMSET(st_req_data)
+
+                    fn_msgq.c
+                    ---------
+                        fn_read_msg_q(i_snd_qid, &st_req_data, &li_queue_msg_size, c_ServiceName, c_errmsg)
+
+                    fo_exg_esr_lib.pc
+                    -----------------
+                        fn_do_xchng_logon(&(st_req_data.st_exch_msg_data),ptr_snd_msgs_file, c_ServiceName, c_errmsg)
+                        fn_logout_res(sql_c_xchng_cd, sql_c_pipe_id, c_ServiceName, c_errmsg)
+
+                    fn_scklib_tap.C
+                    ---------------
+                    fn_writen(i_tap_sck_id, (void *)(&st_req_data.st_exch_msg_data), li_send_tap_msg_size, c_ServiceName, c_errmsg)
+
+                    fn_fo_fprint.c
+                    --------------
+                    fn_fprint_log(ptr_snd_msgs_file, c_tap_header, (void *)(&st_req_data.st_exch_msg_data), c_ServiceName, c_errmsg)
+
+                    fn_pthread.c
+                    ------------
+                    fn_lock_sig_unlock(&cond_thrd_cntrl, &mut_thrd_cntrl, &i_cond_thrd_cntrl, EXIT_BY_SND_THRD)
+
+            void fn_gettime() in "cln_esr_clnt" and called from "fn_snd_thrd"
+                {
+                    int i_mili_sec = 0;  // integer to store milliseconds.
+                    struct timeval tv;   // A structure to store the current time in seconds and microseconds.
+                    struct timezone tz;  // A structure to store the timezone information.
+                    struct tm *tm;       // A pointer to a tm structure to store broken-down time (like hours, minutes, and seconds).
+
+                    gettimeofday(&tv, &tz); //This function gets the current time and stores it in tv (seconds and microseconds) and the timezone in tz.
+                    tm = localtime(&tv.tv_sec); //  This converts the time in seconds (stored in tv.tv_sec) to local time and stores it in tm
+                    i_mili_sec = tv.tv_usec / 1000; //  This converts microseconds to milliseconds and stores it in i_mili_sec.
+                    sprintf(c_time, "%d:%d:%d:%d", tm->tm_hour, tm->tm_min, tm->tm_sec, i_mili_sec); // This formats the time as a string and stores it in  c_time.
+                    return;
+                }
+
+                // i think go function will be completely different
+
+            void *fn_rcv_thrd(void) in "cln_esr_clnt" and called from "CLN_ESR_CLNT" service
+
+                    MACROS:
+                    ------
+
+                        TOTAL_FML
+                        YES
+                        DONT_EXIT
+                        MAX_SCK_MSG
+                        MEMSET()
+                        EXIT_BY_RCV_THRD
+                        SIGUSR2
+                        SIG_BLOCK
+                        DEBUG_MSG_LVL_0
+                        NOT_DOWNLOAD
+                        DEBUG_MSG_LVL_3
+                        DEBUG_MSG_LVL_2
+                        LIBMSG
+                        EXIT
+                        LOG_DUMP
+                        DOWNLOAD
+                        ORDER_CONFIRMATION_OUT
+                        ORS_OPN_ORD_DTLS
+                        WAITING_FOR_INVT_PCKT
+                        INVT_PCKT_RCVD
+                        NO
+                        OPM_NEW_EXG_PWD // used in sql querry
+                        OPM_XCHNG_CD    // used in sql querry
+                        OPM_PIPE_ID     // used in sql querry
+                        RCV_ERR
+                        OPM_NEW_EXG_PWD // used in sql querry
+                        LOGON_RESP_RCVD
+                        SID_RESP_RCVD
+                        ACK
+                        LDB_RESP_RCVD
+                        SQLCODE
+                        SLTP
+                        ORDER_CANCEL_CONFIRM_OUT
+                        ORDER_CXL_CONFIRMATION_TR
+                        TRD
+                        TPNOREPLY
+                        
+
+                    SWITCH CASES:
+                    -------------
+                        two types of structures (values) in two SWITCH
+                            1. tmp_buf_dat.st_hdr.si_transaction_code
+                                MESSAGE_RECORD:
+                                UPDATE_LOCALDB_DATA:
+
+                            2. st_buf_dat->st_hdr.si_transaction_code
+
+                                INVITATION_PACKET
+                                SIGN_ON_REQUEST_OUT
+                                SYSTEM_INFORMATION_OUT
+                                PARTIAL_SYSTEM_INFORMATION
+                                UPDATE_LOCALDB_HEADER
+                                ORS_OPN_ORD_DTLS
+                                UPDATE_LOCALDB_TRAILER
+                                SIGN_OFF_REQUEST_OUT
+                                HEADER_RECORD
+                                PRICE_CONFIRMATION
+                                TRAILER_RECORD
+                                ORDER_CONFIRMATION_OUT
+                                ORDER_MOD_CONFIRM_OUT
+                                ORDER_CANCEL_CONFIRM_OUT
+                                ORDER_ERROR_OUT
+                                ORDER_MOD_REJ_OUT
+                                ORDER_CXL_REJ_OUT
+                                FREEZE_TO_CONTROL
+                                BATCH_ORDER_CXL_OUT
+                                ORDER_CONFIRMATION_OUT_TR
+                                ORDER_MOD_CONFIRM_OUT_TR
+                                ORDER_CXL_CONFIRMATION_TR
+                                SP_ORDER_CONFIRMATION
+                                SP_ORDER_ERROR
+                                TWOL_ORDER_CONFIRMATION
+                                TWOL_ORDER_ERROR
+                                THRL_ORDER_CONFIRMATION
+                                THRL_ORDER_ERROR
+                                SP_ORDER_CXL_CONFIRM_OUT
+                                TWOL_ORDER_CXL_CONFIRMATION
+                                THRL_ORDER_CXL_CONFIRMATION
+                                SP_ORDER_MOD_CON_OUT
+                                SP_ORDER_CANCEL_REJ_OUT
+                                SP_ORDER_MOD_REJ_OUT
+                                BATCH_SPREAD_CXL_OUT
+                                ON_STOP_NOTIFICATION
+                                TRADE_CONFIRMATION
+                                TRADE_CONFIRMATION_TR
+                                EX_PL_ENTRY_OUT
+                                EX_PL_MOD_OUT
+                                EX_PL_CXL_OUT
+                                EX_PL_CXL_CONFIRMATION
+                                EX_PL_MOD_CONFIRMATION
+                                EX_PL_CONFIRMATION
+                                EX_PL_ENTRY_IN
+                                BCAST_SECURITY_MSTR_CHG
+                                BCAST_STOCK_STATUS_CHG
+                                BCAST_STOCK_STATUS_CHG_PREOPEN
+                                BCAST_PART_MSTR_CHG
+                                BCAST_INSTR_MSTR_CHG
+                                BCAST_INDEX_MSTR_CHG
+                                BCAST_BASE_PRICE
+                                BCAST_INDEX_MAP_TABLE
+                                BCAST_JRNL_VCT_MSG
+                                BCAST_TURNOVER_EXCEEDED
+                                BROADCAST_BROKER_REACTIVATED
+                                BC_OPEN_MSG
+                                BC_CLOSE_MSG
+                                BC_PRE_OR_POST_DAY_MSG
+                                BC_PRE_OPEN_ENDED
+                                EQUAL_BC_POSTCLOSE_MSG
+                                CTRL_MSG_TO_TRADER
+                                BCAST_CONT_MSG
+
+
+
+                    Structures:
+                    -----------
+                        struct st_net_hdr
+                        st_hdr
+                            si_transaction_code
+                        st_dwnldmsg
+                            un_dw_msg
+                        st_ldb_data
+                            u_ldbmsg
+                        st_innr_hdr
+                            si_transaction_code
+                        st_inv_pck
+                            si_inv_cnt
+                        st_lgn_res
+                        st_sys_inf_dat
+                        st_oe_res
+                            st_ord_flg
+                                flg_ioc
+                            st_hdr
+                               si_error_code 
+                        st_brd_exch_exception_msg
+
+
+
+
+                        struct st_oe_reqres  "in   case ORS_OPN_ORD_DTLS:"
+                        struct st_spd_oe_reqres
+                        struct st_trade_confirm
+                        struct st_trade_confirm_tr
+                        struct st_ex_pl_reqres
+                        struct st_security_update_info
+                        struct st_security_status_update_info
+                        struct st_participant_update_info
+                        struct st_bcast_message
+                        struct st_broadcast_tlimit_exceeded
+                        struct st_trader_int_msg
+
+
+
+
+                    union:
+                    ------
+                        union st_exch_rcv_msg *st_buf_dat;
+	                    union st_exch_rcv_msg tmp_buf_dat;
+                        
+
+
+
+                    functions used in "fn_snd_thrd" :
+                    ---------------------------------
+
+
+
+
+
+    cln_pack_clnt:
+    --------------
+
+        Global variables:
+        -----------------
+
+            #define LOCK 2049 /* Ver 1.2 */
+
+            /**** Global Variables ****/
+            /**
+            long int li_look_tab_hnd;**/
+
+            long int li_seq_nm = 0;
+            int i_key = 0;
+            int i_qid = 0;
+            long int li_max_q = 0;
+            long int li_cnt_q = 0;
+            int i_queue_chk_flg = 1;
+
+            int i_ord_mkt_stts;
+            int i_ext_mkt_stts;
+            int i_exr_mkt_stts;
+            int i_pmp_stts;
+            int i_upd_stts;
+
+            /**
+            int i_look_tab; **/
+
+            int i_part_stts;
+            int i_brkr_stts;
+            int i_exit_stts;
+
+            int i_reco_stts;
+            int i_ord_lmt_val = 0;
+            char c_filter2[32];
+            struct st_req_q_data st_q_packet;
+            struct st_req_q_data st_sndq_packets[20]; /* Ver 1.1 */
+            int i_pack_counter = 0;					  /* Ver 1.1 */
+            int i_pack_val = 0;						  /* Ver 1.1 */
+            char c_time[12];
+            char c_auto_connection = '\0'; /** Ver 2.4 **/
+            EXEC SQL BEGIN DECLARE SECTION;
+
+            char sql_c_xchng_ctcl_id[LEN_CTCL_ID];
+            char sql_c_xchng_trdr_id[LEN_TRDR_ID];
+            char sql_c_xchng_cd[3 + 1];
+            char sql_c_xchng_brkr_id[LEN_BRKR_ID];
+            varchar sql_c_nxt_trd_date[LEN_DATE];
+            char sql_c_pipe_id[2 + 1];
+            struct st_opm_pipe_mstr st_opm_mstr;
+            long sql_li_max_pnd_ord;
+
+            /***** ver 3.5 variables starts *****/
+            char c_ordr_rfrnc[20];
+            char c_sprd_ord_ind;
+            /***** ver 3.5 variables ends *****/
+
+            EXEC SQL END DECLARE SECTION;
+
+        functions:
+        ----------
+
+            fn_bat_init:
+            ------------
+                
+                discription:
+                ------------
+                    1.  in this function  first we are setting null to the structure called " struct st_req_q_data st_sndq_packets[20];" (in this structure there are two fields "long int li_msg_type; and  struct st_exch_msg st_exch_msg_data;" )
+                    2.  then we are setting the name of the service "strcpy(c_ServiceName, "cln_pack_clnt");"  (i think it is actually a string)
+                    3.  then we are checking  if the number of arguments (argc) is less than 6. If so, log a usage message and return -1.
+                            we are setting "cln_snd_clnt <tag qualifier> <Exchange cd> <Pipe id> <ord_lmt_val> <Reco mode> <O-Time stamp>" and more.
+                            and we are checking if Minimum number of teh arguments is greater or equal to six meaning (atleast we are getting above mentioned in agrument)
+
+                    4.  Set c_auto_connection to 'N'. "which is initially set to the '\0' "
+                            in same function (fn_bat_init) we are also setting it (c_auto_connection) with argv [7][0] (which means we are getting more than 6 arguments) and in another function (fn_do_reco) we are checking if it is set to 'Y' or not.
+
+                    5. then we are setting "Pipe ID:" strcpy(sql_c_pipe_id, argv[3]); // sql_c_pipe_id is a global var "char sql_c_pipe_id[2 + 1];"
+
+                    6.  then we  are setting "c_reco_mode" with  argv[5][0]; // and it is a local variables
+
+                    7. then we are setting the "order limit" i_ord_lmt_val = atoi(argv[4]); // and it is a local variable
+
+                     Ques1.
+                    8. then we are initializing the routing string by Calling 'fn_init_ddr_pop' with arguments (argv[3], TRADING_SECTION, COMMON).
+
+                     Ques 2. 
+                    9. then we are getting the "IPC KEY" fn_get_prcs_spc with arguments (c_ServiceName, "SEND_QUEUE") and convert the returned value to an integer (i_key).
+                     
+                     Ques3.
+                    10. then we are creating "Message Queue Identifier" by Calling fn_crt_msg_q with arguments (&i_qid, i_key, CLIENT, c_ServiceName, c_err_msg).
+
+                     Ques:3.1 "how we are deducing the value of user_type"  (By reading it from a configuration file )              
+                    11. then we are setting up the "User Type" by calling "fn_get_prcs_spc" with arguments (c_ServiceName, "USER_TYPE") (USER_TYPE is a MACRO , which is holding the USER TYPE) and convert the returned value to an integer (st_opm_mstr.si_user_typ_glb).
+                     
+                     Quest 4. don't know what it is , but we are getting it'svaue from the a configuration file.
+                    12. then we are setting the "Pack Value Setup" by Calling fn_get_prcs_spc with arguments (c_ServiceName, "PACK_VAL") and convert the returned value to an integer (i_pack_val). // i_pack_val is a global var
+
+                    13. then we are initialize several global variables related to market and transaction "STATUS" to FALSE (there are 9 status variable and we are setting "FALSE" to 8 status variables here and last will be set in "fn_do_reco").
+
+                    14. then we are fetching the Exchange Code from Database by Executing SQL statements to fetch exchange-related information into various variables like "sql_c_xchng_cd", "sql_li_max_pnd_ord", and "i_stream_count_opm" from "opm_ord_pipe_mstr" Table.
+                            // sql_c_xchng_cd ----> exchange code  (read from document of nse to know what it is)
+                                
+                            // sql_li_max_pnd_ord ------> "Maximum Pending orders in a database , this variable will be used to check if our message queue have less order or not if yes then we will be return "OVER_LOAD" "(GlobalVar).
+                            
+                                Ques 5. 
+                            // i_stream_count_opm -----> (i didn't know what it is called, but We are retrieving the
+                                                        variable i_stream_count_opm from the opm_ord_pipe_mstr table.
+                                                        Using this value, we then set the i_stream_count value from 
+                                                        the FXB_FO_XCHNG_BOOK table. If i_stream_count is less than 9,
+                                                        we adjust it to 9. Finally, we update the i_stream_count 
+                                                        column in the OPM_STREAM_NO table, based on where the 
+                                                        i_stream_count_opm value was initially fetched.")
+
+                    15. then we are extracting "sql_exg_settlor_stts", from "exg_xchng_mstr" Table. // Local vars
+                                               "sql_exg_brkr_stts", 
+                                               "sql_exg_crrnt_stts", 
+                                               "sql_exg_extnd_mrkt_stts", 
+                                               "sql_exg_exrc_mkt_stts."
+                    
+                    16. then we are begining the transaction by calling fn_begintran and log relevant messages.
+
+                        i_trnsctn = fn_begintran(c_ServiceName, c_err_msg);
+                    
+                    Ques.6 //  
+                    17. then we are fetching the "Stream_Count" from sql querry 
+                        
+                        /* This SQL query retrieves the maximum stream number (FXB_STREAM_NO) 
+                        from the FXB_FO_XCHNG_BOOK table where the pipeline ID matches a 
+                        given value (FXB_PIPE_ID) and the modification trade date (FXB_MOD_TRD_DT)
+                        is today's date (trunc(sysdate)). If no such records are found, it returns 0.
+                         The results are stored in the variable i_stream_count. Additionally,
+                         it excludes stream numbers '-1' and '99' */
+
+                    Ques 7: what is need of it ? 
+                        in differenet functions it is named differently
+                        (i_stream_count_opm  , i_stream_count , i_stream_count , li_stream_no , li_stream_cnt, fxb_stream_no , ftd_stream_no )
+                        in "fn_prcs_reco" we are setting it to the "c_alpha_char" in message header.
+                            st_nse_dwnld_req.st_hdr.c_alpha_char[0] = li_stream_cnt; 
+                        
+
+
+                    18. then we are checkin if i_stream_count is less then 9 then we are setting it to 9. 
+                        (read 14. // i_stream_count_opm , to get full context)
+
+
+                    19. then after we are commiting the transaction by using "fn_committran" and handle any errors.
+
+                    
+                    Ques: No idea what is happning here ??
+                    20. Subscribe to various triggers using "tpsubscribe" and handle any errors.  
+
+
+                    21. then we are setting the "st_opm_mstr.c_opm_trdr_id" and "st_opm_mstr.li_opm_brnch_id" from "OPM_ORD_PIPE_MSTR" 
+
+                        struct st_opm_pipe_mstr                (this is the structure where we are setting the values)
+                            {
+                                char c_opm_pipe_id[3];
+                                char c_opm_pipe_desc[257];
+                                char c_opm_xchng_cd[4];
+                                char c_opm_pipe_ctgry_id[3];
+                                char c_opm_mkt_allwd[2];
+                                long li_opm_user_id;
+                                char c_opm_lst_pswd_chg_dt[20];
+                                int i_opm_max_pnd_ord;
+                                int i_opm_pmp_stts;
+                                int i_opm_adm_stts;
+                                char c_opm_ctcl_product[21];
+                                char c_opm_exg_pwd[13];
+                                char c_opm_new_exg_pwd[13];
+                                char c_opm_remark[513];
+                                char c_opm_ws_no[11];
+                                char c_opm_dwnld_tm[20];
+                                char c_opm_usr_typ[2];
+
+                                long li_opm_brnch_id;	 // --------------------- (this one is used) -----
+                                char c_xchng_brkr_id[6]; //--------------------- (this one is used) ------
+                                char c_opm_trdr_id[6];	 //--------------------- (this one is used) ------
+                                int si_user_typ_glb;	 //----------------------(this one is used)
+                            };
+                             
+                    
+                    22. then we are extracting "sql_c_nxt_trd_date,         from "exg_xchng_mstr" tables
+                                                st_opm_mstr.c_xchng_brkr_id, 
+                                                sql_c_xchng_ctcl_id " 
+
+                        // only 4 fields of  are used of "st_opm_pipe_mstr" and we filled three from two tables "OPM_ORD_PIPE_MSTR" and "exg_xchng_mstr".
+                        // 4th variable we are setting in 11h. step.
+                    
+                    23. then based on the 'Reco' mode we are setting 'c_tm_stmp' and 'c_auto_connection'.
+
+                        if (c_reco_mode == 'B')
+                            {
+                                strcpy(c_tm_stmp, argv[6]);
+                                c_auto_connection = argv[7][0]; /** Ver 2.4 **/
+                            }
+                        else
+                            {
+                                strcpy(c_tm_stmp, " ");
+                            } 
+                        the value of 'c_reco_mode' we are getting from the "c_reco_mode = argv[5][0];" 
+
+                    24. then we are getting the value of the MACRO (MAX_Q_CHK_INTERVAL) using the function "fn_GetProcessSpaceValue".
+                            and converting the recieved value into int and saving it into the variable 'li_max_q'.
+                    
+                    
+                    25. then we are cheacking the status.
+
+                    26.  
+                               
+
+
+
+
+                    
+                Querries 
+                ----------
+                    1. 
+                                                
+                        EXEC SQL
+                                select opm_xchng_cd,
+                                opm_max_pnd_ord,
+                                opm_stream_no /*** Ver 3.4 ***/
+                                    into : sql_c_xchng_cd,
+                                : sql_li_max_pnd_ord,
+                                : i_stream_count_opm /*** Ver 3.4 ***/
+                                    From opm_ord_pipe_mstr
+                                        where opm_pipe_id = : sql_c_pipe_id;
+
+                        --------------------------------
+                    2.
+
+                        EXEC SQL
+                                SELECT exg_settlor_stts,
+                                exg_brkr_stts,
+                                exg_crrnt_stts,
+                                exg_extnd_mrkt_stts,
+                                exg_exrc_mkt_stts
+                                    INTO : sql_exg_settlor_stts,
+                                : sql_exg_brkr_stts,
+                                : sql_exg_crrnt_stts,
+                                : sql_exg_extnd_mrkt_stts,
+                                : sql_exg_exrc_mkt_stts
+                                    FROM exg_xchng_mstr
+                                        WHERE exg_xchng_cd = : sql_c_xchng_cd;
+
+
+                        --------------------------------
+                    3.
+
+                        EXEC SQL
+                                    SELECT NVL(MAX(FXB_STREAM_NO), 0)
+                                        INTO : i_stream_count
+                                                FROM FXB_FO_XCHNG_BOOK
+                                                    WHERE FXB_PIPE_ID = : sql_c_pipe_id
+                                                                                AND FXB_MOD_TRD_DT = trunc(sysdate)
+                                                                                    AND FXB_STREAM_NO NOT IN('-1', '99');
+
+                        ----------------------------------
+                    4.
+                        EXEC SQL
+                                    UPDATE opm_ord_pipe_mstr
+                                        SET opm_pmp_stts = 0,
+                                            OPM_STREAM_NO = : i_stream_count
+                                                                WHERE opm_pipe_id = : sql_c_pipe_id;
+
+                        ---------------------------------
+                    5.
+                        EXEC SQL
+                                    UPDATE opm_ord_pipe_mstr
+                                        SET opm_pmp_stts = 0 WHERE opm_pipe_id = : sql_c_pipe_id;
+
+
+                        ---------------------------------
+                    5.
+                        EXEC SQL
+                                SELECT OPM_TRDR_ID,
+                                OPM_BRNCH_ID
+                                    INTO : st_opm_mstr.c_opm_trdr_id,
+                                : st_opm_mstr.li_opm_brnch_id
+                                    FROM OPM_ORD_PIPE_MSTR
+                                        WHERE OPM_XCHNG_CD = : sql_c_xchng_cd
+                                                                    AND OPM_PIPE_ID = : sql_c_pipe_id;
+
+                        ------------------------------
+                    6.
+                        EXEC SQL
+                                Select exg_nxt_trd_dt,
+                                exg_brkr_id,
+                                exg_ctcl_id
+                                    into : sql_c_nxt_trd_date,
+                                : st_opm_mstr.c_xchng_brkr_id,
+                                : sql_c_xchng_ctcl_id
+                                    From exg_xchng_mstr
+                                        Where exg_xchng_cd = : sql_c_xchng_cd;
+
+
+                        -------------------------------
+                    7.
+                        EXEC SQL
+                                select opm_xchng_cd,
+                                opm_max_pnd_ord,
+                                opm_stream_no /*** Ver 3.4 ***/
+                                    into : sql_c_xchng_cd,
+                                : sql_li_max_pnd_ord,
+                                : i_stream_count_opm /*** Ver 3.4 ***/
+                                    From opm_ord_pipe_mstr
+                                        where opm_pipe_id = : sql_c_pipe_id;
+
+
+                Tables:
+                -------
+                    
+                    opm_ord_pipe_mstr:
+                    OPM_ORD_PIPE_MSTR:
+
+                    exg_xchng_mstr:
+
+                    FXB_FO_XCHNG_BOOK
+
+            fn_do_reco :
+            ----------
+
+                Description:
+                ------------
+
+                    The fn_do_reco function handles the recovery process for a data stream in a transactional system. Here's what it does:
+
+                    Retrieve Stream Number: First, it gets the stream number from the database.
+                    Process Recovery: It performs recovery for each stream.
+                    Write Messages to Queue: It writes processed messages to a queue.
+                    Wait for Download Completion: It waits until the download is complete.
+                    Check for Unacknowledged Orders: It checks the database for any unacknowledged orders.
+                    Manage Transactions: It manages transactions, deciding whether to commit or abort them.
+                    Handle Auto-Reconnection: If needed, it handles automatic reconnection.
+
+                Step by step process:
+                ---------------------
+
+                    1. first thisng in this function is 'initialization'.
+
+                        1. local variable initialization:
+                        ---------------------------------
+                                sql_c_tm_stmp is initialized with the value of c_tm_stmp.
+
+                                Various other local variables such as li_stream_no, li_stream_cnt, li_buf_len, c_auto_reconnect, ptr_fml_Ibuf, c_rqst_typ, c_xchng_stts, c_usr_id, c_command, and c_msg are defined and initialized as needed.
+
+                        2. structure initialization:
+                        ----------------------------
+
+                                The structure st_sndq_packets is set to null values using memset.
+                
+                    2. then we are rading the the "OPM_STREAM_NO" from "OPM_ORD_PIPE_MSTR" table and storing it into the 'li_stream_no'.
+                        then we are cheacking if sql querry is executed without any error.
+
+                    3. then , we extracted the stream _no . now in this step we are going to process streams.
+
+                            to do so , we are checking if "c_reco_mode" != 'N'. if this condition is true then we proceed to recovery process.
+
+
+            fn_prcs_reco:
+            --------------
+
+                Description:
+                ------------
+
+                    Initialization: Set up and clear structures and variables.
+                    Logging: Log function entry and parameter values.
+                    Recovery Mode Handling: Determine the recovery status based on the mode.
+                    Data Retrieval: Fetch necessary values from the database for download request timing.
+                    Structure Population: Fill out the download request structure and log details.
+                    Message Preparation: Pack data, compute checksum, and set message length.
+                    Queue Packet Preparation: Prepare and store the queue packet.
+                    Completion: Return success status.     
+
+                Step By Step Process:
+                ---------------------
+
+                    Step 1:    Initialization
+                    -------
+
+                        1. Initialize Structures:
+                        -------------------------
+
+                                Set all fields of 'st_nse_dwnld_req' and 'st_exch_message' structures to zero using memset.
+                                
+                                Initialize st_q_packet structure to zero as well.
+
+                        2. Local Variables Setup:
+                        -------------------------
+
+                                Declare and initialize local variables for database status, timing, and string manipulation.
+
+
+                    Step 2: Setup Logging
+                    -------
+
+                        Log Function Entry:
+                        -------------------
+                            Log the entry into fn_prcs_reco using the provided c_ServiceName.
+
+                            Log the values of c_pipe, c_trd_dt, and sql_c_tm_stmp for debugging.
+
+                    step 3: Handling Recovery Mode
+                    -------
+
+                            Check Recovery Mode:
+                            --------------------
+
+                                1. If c_reco_mode is 'N', set i_rec_stts to 0 and log this condition.
+
+                                2. If c_reco_mode is 'S', set i_rec_stts to 1 and initialize ll_strt_tm to 0.
+
+                                3. else 
+                                   1.  i_ord_bod_stts is set to 0. This indicates that the order body status is initially inactive or not set.
+
+                                   2. i_rec_stts is set to 1, which signifies that the recovery process is to be executed.
+
+                                   3. If i_rec_stts is 1, the function proceeds to handle the download request.
+
+                                   4. Logs a message indicating that a download request is being sent.
+
+                                   5. Query 1: Retrieve 'd_strt_tm_o'
+
+                                      1.  If the SQL execution is not successful and not due to "no data found" (SQLCODE != 0 and SQLCODE != -1405), logs an error and returns -1.
+                                      2.  If no data is found (SQLCODE == -1405), d_strt_tm_o is set to 0.
+
+                                    6. Query 2: Retrieve d_strt_tm_i
+
+                                       1. Similar error handling as the first query: logs an error and returns -1 for failures, and sets d_strt_tm_i to 0 if no data is found.
+
+                                    7. Determine Start Time:
+
+                                       1. Compares d_strt_tm_i and d_strt_tm_o. Sets ll_strt_tm to the greater of the two values.
+
+                    Step 5: Populate Download Request Structure:
+                    --------------------------------------------
+
+                            1. Fill Header Information:
+                            ---------------------------
+
+                                Set 'li_trader_id' and other header fields of 'st_nse_dwnld_req' based on the data and function parameters.
+
+                                Set st_nse_dwnld_req.st_hdr.si_transaction_code to DOWNLOAD_REQUEST.
+
+                            2. Log Header Details:
+                            ----------------------
+
+                                Log the details of the header structure for debugging purposes.
+
+                    Step 6: Prepare Exchange Message:
+                    ---------------------------------
+
+                            1. Pack Data:
+                            -------------
+
+                                Copy the filled st_nse_dwnld_req into st_exch_message.st_exch_sndmsg.
+
+                                Get and set the sequence number for st_exch_message.st_net_header.
+
+                            2. Calculate and Set Checksum:
+                            ------------------------------
+
+                                Compute the MD5 checksum of st_nse_dwnld_req and set it in the network header of st_exch_message.
+
+                            3. Set Network Header Length:
+                            -----------------------------
+
+                    Step 7: Prepare Queue Packet:
+                    -----------------------------
+
+                            1. Pack Queue Data:
+                            -------------------
+
+                                Populate st_q_packet with DOWNLOAD_REQUEST type and the exchange message.
+                            
+                            2. Store Queue Packet:
+                            ----------------------
+
+                                Copy st_q_packet into st_sndq_packets.
+                            
+                            3. Log Packet Details:
+                            ----------------------
+
+                                Log the status of the queue packet preparation for debugging.
+                            
+                    Step 8: Finalize:
+                    -----------------
+
+                            Return 0 to indicate successful execution.
+
+
+
+ALL HEADER FILES:
+-----------------
+
+    fn_env.C        (Done, created equvalant file in GO)
+    --------
+
+        
+
+        File discription:
+        -----------------
+            we are reading specific fonfiguration from an INI file, store them in a list, 
+            and retrieve these configurations as needed for the service or application.
+
+
+
+        Complete file:    
+        --------------
+            .h file:
+            --------
+                # define MAX_TOKEN 50
+                # define MAX_LEN 100
+
+                void GetFieldValue ( char *, char *, char *, int );
+                int fn_init_prcs_spc ( char *, char *, char * );
+                char *fn_get_prcs_spc ( char *, char * );
+
+
+
+            .c file:
+            --------
+
+                #include <stdio.h>
+                #include <string.h>
+                #include <ctype.h>
+                #include <fn_env.h>
+                #include <fn_log.h>
+                #include <unistd.h>		/*  Ver 1.1 AIX Migration 11-Dec-2007 ROhit */
+
+                char list[MAX_TOKEN][MAX_LEN];
+                int count;
+
+                int fn_init_prcs_spc ( char *c_Servicename, char *c_filenm, char *c_prcs_nm )
+                {
+                    char szLine[MAX_LEN];
+                    FILE *fp;
+                    char szToken[MAX_LEN];
+                    char szPrcsName[MAX_LEN];
+                    int flag;
+                    extern int count;
+                    int matchfound;
+                    char c_msg [ MSG_LEN ];
+
+                    count = 0;
+                    matchfound = 0;
+                    flag = 0;
+
+                    if ( access( c_filenm, 0 ) == -1 )
+                    {
+                        sprintf ( c_msg, "INI File :%s: does not exist", c_filenm );	
+                        fn_userlog ( c_Servicename,  c_msg );
+                        return -1;
+                    }
+
+                    fp = fopen( c_filenm, "r" );
+                    if ( fp == NULL ) 
+                    {
+                        sprintf ( c_msg, "INI File :%s: Data Not Found", c_filenm );	
+                        fn_userlog ( c_Servicename,  c_msg );
+                        return -1;
+                    }
+                    while ( fgets ( szLine, MAX_LEN, fp ) != NULL )
+                    {
+                        szLine[strlen(szLine) - 1 ] = '\0';
+                        if ( strncmp( szLine, "[", /*(int)*/strlen("[") ) == 0 )				/* AIX migration Ver 1.1 */
+                        {
+                            memset ( szToken, 0, sizeof( szToken ) );
+                            memset ( szPrcsName, 0, sizeof( szPrcsName ) );
+                            GetFieldValue( szLine, szToken, "[", 2 );
+                            GetFieldValue( szToken, szPrcsName, "]", 1 );
+                            if ( strcmp( szPrcsName, c_prcs_nm ) == 0 )
+                            {
+                                flag=1;
+                                matchfound=1;
+                            }
+                        }
+                        else if ( ( strncmp( szLine, "[",/*(int)*/ strlen("[") ) != 0 ) && 		/* AIX migration  Ver 1.1*/
+                            ( flag == 1 )                                        )
+                        {
+                            if ( strlen( szLine ) != 0 )
+                            {
+                                strcpy ( list [ count ], szLine );
+                                count++;
+                                if ( count == MAX_TOKEN )
+                                {
+                                    fn_userlog ( c_Servicename, "Exceeding max token limit" );
+                                    sprintf ( c_msg, "MAX_TOKEN :%d: Count of Token :%d:", 
+                                    MAX_TOKEN, count );
+                                    fn_userlog ( c_Servicename,  c_msg );
+                                    return -1;
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    fclose(fp);
+
+                    if ( matchfound == 0 )
+                    {
+                        sprintf ( c_msg, "%s Not Specified in the INI File %s\n", 
+                                    c_prcs_nm, c_filenm );
+                        fn_userlog ( c_Servicename,  c_msg );
+                        return -1;
+                    }
+
+                    return 0;
+                }
+
+                char* fn_get_prcs_spc ( char *c_Servicename, char *c_token )
+                {
+                    int i;
+                    static char c_val [ MAX_LEN ];
+                    int matchfound;
+                    char szToken[MAX_LEN];
+                    extern int count;
+                    char c_msg [ MSG_LEN ];
+
+                    matchfound = 0;
+
+                    for ( i=0; i<count; i++ )
+                    {
+                        memset( szToken, 0, sizeof( szToken ) );
+                        GetFieldValue( list[i], szToken, "=", 1 );
+                        if ( strcmp ( c_token, szToken ) == 0 )
+                        {
+                            memset( szToken, 0, sizeof( szToken ) );
+                            GetFieldValue( list[i], szToken, "=", 2 );
+                            strcpy ( c_val, szToken ); 
+                            matchfound = 1;
+                            break;
+                        }
+                    }
+                    
+                    if ( matchfound == 0 )
+                    {
+                        sprintf (c_msg, "Match Not Found for %s", c_token );
+                        fn_userlog ( c_Servicename,  c_msg );
+                        return NULL;
+                    }
+                    else
+                    {
+                        return c_val;
+                    }
+                }
+
+                void GetFieldValue ( char *szSourceLine, // list
+                                    char *szFldValue, // buffer for  
+                                    char *szSeparator, // =
+                                    int iFldCount )// 1
+                {
+                    int  i = 0;
+                    /*	int  j = 0; */
+                        long j = 0;				/* AIX migration Ver 1.1*/
+
+                        char *ptr;
+                        char *pszDummyPtr;
+
+                        pszDummyPtr = szSourceLine; // list 
+
+                        for (i = 0; i < iFldCount - 1; i++)
+                        {
+                            if ( ( ptr = (char *)strstr(pszDummyPtr, szSeparator) ) != NULL )
+                            {
+                                pszDummyPtr = ptr + 1;
+
+                                if (i == iFldCount - 2)
+                                {
+                                    j = 0;
+
+                                    while ( ( strncmp ( pszDummyPtr + j, szSeparator, strlen ( szSeparator )) != 0  ) && ( j != strlen(pszDummyPtr) )    )
+                                    {
+                                        szFldValue[j] = pszDummyPtr[j];
+                                        j++;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                    if (iFldCount == 1)
+                    {
+                        j = 0;
+
+                        while ( ( strncmp ( pszDummyPtr + j, 
+                                            szSeparator,
+                                            strlen ( szSeparator )) != 0  ) && 
+                                ( j != /*(int)*/strlen(pszDummyPtr)                ) )				/* AIX mirgration Ver 1.1 */ 
+                        {
+                        szFldValue[j] = pszDummyPtr[j];
+                        j++;
+                        }
+                    }
+                }
+
+
+        Functions used in this file:
+        ----------------------------
+
+            
+            fn_init_prcs_spc:
+            -----------------
+
+                discription:
+                ------------
+
+                   1. Parameters:
+                   --------------
+                        c_Servicename: Name of the service.
+                        c_filenm: Name of the configuration file.
+                        c_prcs_nm: Name of the process to look for in the configuration file.
+                    
+                    2. Purpose: 
+                    -----------
+                       "We are receiving 'c_fileName' and 'process_name' as input, and we are storing the entire section of the specified property in a global buffer in the 'env.c' file."
+
+                        
+
+            fn_get_prcs_spc:
+            ----------------
+
+
+                Purpose:
+                --------
+
+                    in this function we are passing the token(MACRO) generally to find it's value from configuration file.
+
+            GetFieldValue :
+            --------------
+
+                    1. Parameters:
+                    --------------
+                        szSourceLine: The input string from which the field value is to be extracted.
+                        szFldValue: The output string where the extracted field value will be stored.
+                        szSeparator: The character or string that separates fields in the source string.
+                        iFldCount: The number of the field to extract.
+                    
+                    2. Purpose:
+                    -----------
+                        this function looks for a value inside the '['and  ']' and it returns the value (which is a property).
+
+    fn_tuxlib
+    ---------
+
+        Description :
+        -----------
+            this files mostly deal with the tuxido functionality.
+
+        function:
+        ---------
+
+            int fn_begintran(char *c_servicename,char *c_err_msg)
+            -----------------------------------------------------
+                this function is used to beging the transaction.
+
+            int fn_committran(char *c_servicename,int i_trnsctn,char *c_err_msg)
+            --------------------------------------------------------------------
+                this function is used to commit the transaction.
+
+    fn_ddr.C
+    --------      
+            
+            

@@ -1,0 +1,54 @@
+Questions:
+----------
+
+1.    file "cln_pack_clnt"
+        function "fn_bat_init"
+
+               1. what is Routing string ?
+
+                    /*** Initialize the Routing string ***/
+	                fn_init_ddr_pop(argv[3], TRADING_SECTION, COMMON);
+                    
+               2.   what is "IPC KEY" ?
+
+                    ptr_c_tmp = (char *)fn_get_prcs_spc(c_ServiceName, "SEND_QUEUE");
+
+                        i_key = atoi(ptr_c_tmp);
+                
+                3.  Message Queue Identifier ?? (i think, it is to identify the queue )
+
+                    fn_crt_msg_q(&i_qid, i_key, CLIENT, c_ServiceName, c_err_msg)
+
+                3.1 "how we are defining the value of user_type"  ?? 
+                    
+                    where i can see the vaue of "USER_TYPE"
+
+                    ptr_c_tmp = (char *)fn_get_prcs_spc(c_ServiceName, "USER_TYPE");
+
+                    if (ptr_c_tmp == NULL)
+                    {
+                        fn_errlog(c_ServiceName, "L31005", LIBMSG, c_err_msg);
+                        return -1;
+                    }
+
+                    st_opm_mstr.si_user_typ_glb = atoi(ptr_c_tmp);
+                    if (DEBUG_MSG_LVL_0)
+                    {
+                        fn_userlog(c_ServiceName, "USER TYPE IS :%d:", st_opm_mstr.si_user_typ_glb);
+                    }
+
+                4. Pack Value Setup ?? (where we are reading it from "ini" file)
+
+                    /******* Read the PACK VAL from ini file *********/
+                    ptr_c_tmp = (char *)fn_get_prcs_spc(c_ServiceName, "PACK_VAL");
+                    if (ptr_c_tmp == NULL)
+                    {
+                        fn_errlog(c_ServiceName, "L31010", LIBMSG, c_err_msg);
+                        return (-1);
+                    }
+                    i_pack_val = atoi(ptr_c_tmp);
+                
+                5. 
+
+
+

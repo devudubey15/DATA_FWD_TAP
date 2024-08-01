@@ -1,0 +1,40 @@
+AGM ---->  Annual General Meeting
+AON ----> All Or None
+ATO ----> At The Opening
+AU ----> Auction
+BCID ----> Broadcast Circuit ID
+BM ----> Branch Manager
+CLI ----> Client
+CM ----> Corporate Manager
+DL ----> Dealer
+DQ ----> Disclosed Quantity
+EGM ----> Extraordinary General Meeting
+GTC ----> Good Till Cancellation
+GTD ----> Good Till Date
+IOC ----> Immediate Or Cancel
+LTP ----> Last Traded Price
+MBO ----> Market By Order
+MBP ----> Market By Price
+MF ----> Minimum Fill
+NEAT ----> National Exchange for Automated Trading
+MWL ----> Market Wide Limit
+NNF ----> Non Neat Front End
+NSE ----> National Stock Exchange
+NT ----> Negotiated Trade
+OI ----> Open Interest
+OL ----> Odd Lot
+OSL ----> Open Strata Link
+PRO ----> Proprietary
+RL ----> Regular Lot
+SL ----> Stop Loss
+ST ----> Special Terms
+TM ----> Trading Member
+TP ----> Trigger Price
+TWS ----> Trader Workstation
+VCID ----> Virtual Circuit ID
+VSAT ----> Very Small Aperture Terminal
+VV.RR.SS ----> Version. Release. Sub-release
+WHS ----> Warehouse
+
+-------------------------------------------------
+
