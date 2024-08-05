@@ -37,7 +37,7 @@ Questions:
                         fn_userlog(c_ServiceName, "USER TYPE IS :%d:", st_opm_mstr.si_user_typ_glb);
                     }
 
-                4. Pack Value Setup ?? (where we are reading it from "ini" file)
+                4. Pack Value Setup ?? (where we are reading it from  ---> "ini" file)
 
                     /******* Read the PACK VAL from ini file *********/
                     ptr_c_tmp = (char *)fn_get_prcs_spc(c_ServiceName, "PACK_VAL");

@@ -2,16 +2,22 @@ package main
 
 import (
 	"DATA_FWD_TAP/config"
+	"DATA_FWD_TAP/internal/app"
 	"DATA_FWD_TAP/models"
 	"DATA_FWD_TAP/models/structures"
 	"fmt"
-
 	"log"
+	"os"
 
 	"time"
 )
 
 func main() {
+
+	args := os.Args
+
+	// Print the name of the program
+	log.Println("Program :", args[0], " starts")
 
 	/*configFilePath := filepath.Join("config", "config.ini")
 
@@ -41,6 +47,14 @@ func main() {
 	if config.GetDatabaseConnection(*cfg) != 0 {
 		log.Fatalf("Failed to connect to database")
 	}
+
+	DB := config.GetDB()
+
+	if DB == nil {
+		log.Fatalf("Database connection is nil. Failed to connect to the database.")
+	}
+
+	app.CLN_PACK_CLNT(args[1:], DB) // here we are calling the function of cln_pack_clnt
 
 	tm := &models.TransactionManager{}
 

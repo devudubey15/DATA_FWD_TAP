@@ -13,204 +13,101 @@ const (
 	LEN_OPTION_TYPE     = 2
 )
 
-type vw_xchngbook struct {
-	c_pipe_id      string // null="*"
-	c_mod_trd_dt   string // null="*"
-	c_slm_flg      byte   // null='*'
-	l_dsclsd_qty   int64  // null=-1
-	l_ord_tot_qty  int64  // null=-1
-	l_ord_lmt_rt   int64  // null=-1
-	l_stp_lss_tgr  int64  // null=-1
-	c_ord_typ      byte   // null='*'
-	c_sprd_ord_ind byte   // null='*'
-	c_req_typ      byte   // null='*'
+type Vw_xchngbook struct {
+	C_pipe_id     [3]byte
+	C_mod_trd_dt  [23]byte // checkout this one
+	L_ord_seq     int32    // this variable we are gettign from the table
+	C_slm_flg     byte     // this variable we are gettign from the table
+	L_dsclsd_qty  int32    // this variable we are gettign from the table
+	L_ord_tot_qty int32    // this variable we are gettign from the table
+	L_ord_lmt_rt  int32    // this variable we are gettign from the table
+	L_stp_lss_tgr int32    // this variable we are gettign from the table
+	C_ord_typ     byte     // this variable we are gettign from the table
+	C_req_typ     byte     // this variable we are gettign from the table
+	C_valid_dt    [23]byte // this variable we are gettign from the table
+	C_xchng_cd    [4]byte  //
 }
 
-type vw_orderbook struct {
-	c_cln_mtch_accnt string // null="*"
-	c_ordr_flw       byte   // null='*'
-	l_ord_tot_qty    int64  // null=-1
-	l_exctd_qty      int64  // null=-1
-	l_exctd_qty_day  int64  // null=-1
-	c_settlor        string // null="*"
-	c_xchng_ack      string // null="*"
-	c_spl_flg        byte   // null='*'
-	c_ack_tm         string // null="*"
-	c_prev_ack_tm    string // null="*"
-	c_pro_cli_ind    byte   // null='*'
-	c_ctcl_id        string // null="*"
+/*
+	value of this structure "Vw_xchngbook" we are extracting from "FXB_FO_XCHNG_BOOK". and all this is happening in "fn_seq_to_omd" in "cln_pack_clnt".
+*/
+
+type Vw_orderbook struct {
+	c_cln_mtch_accnt [11]byte
+	c_ordr_flw       byte
+	l_ord_tot_qty    int32
+	l_exctd_qty      int32
+	l_exctd_qty_day  int32
+	c_settlor        [13]byte
+
+	c_spl_flg     byte
+	c_ack_tm      [23]byte
+	c_prev_ack_tm [23]byte
+	c_pro_cli_ind byte
+	c_ctcl_id     [16]byte
 }
 
-type vw_nse_cntrct struct {
-	c_xchng_cd     string // null="*"
-	c_ctgry_indstk byte   // null='*'
-	c_symbol       string // null="*"
-	l_ca_lvl       int64  // null=-1
-	l_token_id     int64  // null=-1
+/*
+	values of this structure  "Vw_orderbook". we are extracting from "fod_fo_ordr_dtls" . all this is happening in "fn_ref_to_ord" in "cln_pack_clnt"
+*/
+
+type Vw_nse_cntrct struct {
+	c_prd_typ      byte
+	c_ctgry_indstk byte
+	c_symbol       [11]byte
+	l_ca_lvl       int32
+	l_token_id     int32
 }
 
-type vw_spdordbk struct {
-	c_sprd_ord_rfrnc [3]string // null="*"
+/*
+	this value of this structure we are getting from "Vw_contract". which is in "fn_get_ext_cnt" in "cln_pack_clnt"
+
+	 **** problem here is i am not able find the source like from where we are getting the value of the structure "Vw_contract".
+*/
+
+type St_opm_pipe_mstr struct {
+	/*
+		long li_opm_brnch_id;	 // --------------------- (this one is used) from (OPM_ORD_PIPE_MSTR)
+		char c_xchng_brkr_id[6]; //--------------------- (this one is used)	 from (exg_xchng_mstr)
+		char c_opm_trdr_id[6];	 //--------------------- (this one is used) from (OPM_ORD_PIPE_MSTR)
+		int si_user_typ_glb;	 //----------------------(this one is used) "this one we are getting from "cofiguration file" "GetProcessSpaceValue()""
+
+	*/
+	li_opm_brnch_id int64   // null=-1
+	c_xchng_brkr_id [6]byte // null="*"
+	c_opm_trdr_id   [6]byte // null="*"
+	si_user_typ_glb int     // null=0   (i think , it can be 0 (for trader) , 4 (for CORPORATE_MANAGER) , 5 (for BRANCH_MANAGER) )
+
 }
 
-type st_opm_pipe_mstr struct {
-	li_opm_brnch_id int64  // null=-1
-	c_xchng_brkr_id string // null="*"
-	c_opm_trdr_id   string // null="*"
-	si_user_typ_glb int    // null=0   (i think , it can be 0 (for trader) , 4 (for CORPORATE_MANAGER) , 5 (for BRANCH_MANAGER) )
+/*
+	fields of this structure we are getting from different sources.
+*/
+
+// ================================ till now all the strctures we are getting as parameters ========================
+
+type St_req_q_data struct {
+	li_msg_type int64
+	/* we are changeing this field multiple times.
+		1. it is changing, where we are packing the structure which is in "fn_pack_ordnry_ord_to_nse" here we are setting the the variable based on the request type like (if request is "new" then "li_msg_type = BOARD_LOT_IN" and if request is "modify" the "li_msg_type = ORDER_MOD_IN" and if request is "cancel" then "li_msg_type = ORDER_CANCEL_IN")
+	 	2.
+	*/
+	st_exch_msg_data St_exch_msg // in the original structure here a union is used . but i am directly using the structure.
 }
 
-type st_req_q_data struct {
-	li_msg_type      int64
-	st_exch_msg_data st_exch_msg // it is union in original file
+type St_exch_msg struct {
+	st_net_header St_net_hdr
+	st_oe_res     St_oe_reqres
 }
 
-type st_exch_msg struct {
-	st_net_header  st_net_hdr
-	st_exch_sndmsg st_exch_snd_msg
-}
-
-type st_net_hdr struct {
+type St_net_hdr struct {
 	si_message_length int16
 	i_seq_num         int32
 	c_checksum        [16]byte
 }
 
-type st_exch_snd_msg struct {
-	st_spdoe_reqres st_spd_oe_reqres
-}
-
-type st_spd_oe_reqres struct {
-	St_hdr                     st_int_header
-	C_participant_type         byte
-	C_filler1                  byte
-	Si_competitor_period       int16
-	Si_solicitor_period        int16
-	C_mod_cxl_by               byte
-	C_filler2                  byte
-	Si_reason_code             int16
-	C_start_alpha              [2]byte
-	C_end_alpha                [2]byte
-	L_token                    int32 // V1.4
-	St_cntrct_desc             st_contract_desc
-	C_op_broker_id             [LEN_BROKER_ID]byte
-	C_filler3                  byte
-	C_filler_options           [LEN_FILLER_OPTIONS]byte
-	C_filler4                  byte
-	Si_order_type              int16
-	D_order_number             float64
-	C_account_number           [LEN_ACCOUNT_NUMBER]byte
-	Si_book_type               int16
-	Si_buy_sell                int16
-	Li_disclosed_vol           int32
-	Li_disclosed_vol_remaining int32
-	Li_total_vol_remaining     int32
-	Li_volume                  int32
-	Li_volume_filled_today     int32
-	Li_price                   int32
-	Li_trigger_price           int32
-	Li_good_till_date          int32
-	Li_entry_date_time         int32
-	Li_min_fill_aon            int32
-	Li_last_modified           int32
-	St_order_flgs              st_order_flags
-	Si_branch_id               int16
-	Li_trader_id               int32 // Ver 1.8 Data Type Changed From Short Int To Long
-	C_broker_id                [LEN_BROKER_ID]byte
-	C_oe_remarks               [LEN_REMARKS]byte
-	C_open_close               byte
-	C_settlor                  [LEN_SETTLOR]byte
-	Si_pro_client              int16
-	Si_settlement_period       int16
-	C_cover_uncover            byte
-	C_give_up_flag             byte
-	// Ver 1.3 fields omitted
-	I_sprd_seq_no      int
-	D_nnf_field        float64
-	D_filler19         float64
-	C_pan              [10]byte // Ver 2.7
-	L_algo_id          int64    // Ver 2.7
-	Si_algo_category   int16    // Ver 2.7
-	Ll_lastactivityref int64    // Ver 2.9
-	C_reserved         [52]byte // Ver 2.9 (Not used)
-	Li_spd_price_diff  int32
-	St_spd_lg_inf      [2]st_spd_leg_info
-}
-
-type st_int_header struct {
-	Si_transaction_code int16
-	Li_log_time         int32
-
-	C_alpha_char      [LEN_ALPHA_CHAR]byte
-	Li_trader_id      int32
-	Si_error_code     int16
-	C_filler_2        [8]byte
-	C_time_stamp_1    [LEN_TIME_STAMP]byte
-	C_time_stamp_2    [LEN_TIME_STAMP]byte
-	Si_message_length int16
-}
-
-type st_spd_leg_info struct {
-	L_token                    int32
-	St_cntrct_desc             st_contract_desc
-	C_op_broker_id             [LEN_BROKER_ID]byte
-	C_filler1                  byte
-	Si_order_type              int16
-	Si_buy_sell                int16
-	Li_disclosed_vol           int32
-	Li_disclosed_vol_remaining int32
-	Li_total_vol_remaining     int32
-	Li_volume                  int32
-	Li_volume_filled_today     int32
-	Li_price                   int32
-	Li_trigger_price           int32
-	Li_min_fill_aon            int32
-	St_order_flgs              st_order_flags
-	C_open_close               byte
-	C_cover_uncover            byte
-	C_giveup_flag              byte
-	C_filler2                  byte
-}
-
-type st_contract_desc struct {
-	C_instrument_name [LEN_INSTRUMENT_NAME]byte
-	C_symbol          [LEN_SYMBOL_NSE]byte
-	Li_expiry_date    int32
-	Li_strike_price   int32
-	C_option_type     [LEN_OPTION_TYPE]byte
-	Si_ca_level       int16
-}
-
-type st_order_flags struct {
-	flg_ato         uint32 // 1 bit
-	flg_market      uint32 // 1 bit
-	flg_sl          uint32 // 1 bit
-	flg_mit         uint32 // 1 bit
-	flg_day         uint32 // 1 bit
-	flg_gtc         uint32 // 1 bit
-	flg_ioc         uint32 // 1 bit
-	flg_aon         uint32 // 1 bit
-	flg_mf          uint32 // 1 bit
-	flg_matched_ind uint32 // 1 bit
-	flg_traded      uint32 // 1 bit
-	flg_modified    uint32 // 1 bit
-	flg_frozen      uint32 // 1 bit
-	flg_filler1     uint32 // 3 bits
-}
-
-type st_pk_sequence struct {
-	c_pipe_id  [3]byte
-	c_trd_dt   [23]byte
-	c_rqst_typ [3]byte
-	i_seq_num  int32
-}
-
-type st_addtnal_order_flags struct {
-	c_cover_uncover byte
-}
-
-type st_oe_reqres struct {
-	st_hdr                        st_int_header
+type St_oe_reqres struct {
+	st_hdr                        St_int_header
 	c_participant_type            byte
 	c_filler_1                    byte
 	si_competitor_period          int16
@@ -220,7 +117,7 @@ type st_oe_reqres struct {
 	si_reason_code                int16
 	c_filler_3                    [4]byte
 	l_token_no                    int32
-	st_con_desc                   st_contract_desc
+	st_con_desc                   St_contract_desc
 	c_counter_party_broker_id     [LEN_BROKER_ID]byte
 	c_filler_4                    byte
 	c_filler_5                    [2]byte
@@ -242,7 +139,7 @@ type st_oe_reqres struct {
 	li_entry_date_time            int32
 	li_minimum_fill_aon_volume    int32
 	li_last_modified              int32
-	st_ord_flg                    st_order_flags
+	st_ord_flg                    St_order_flags
 	si_branch_id                  int16
 	li_trader_id                  int32 // Changed from int16 to int32 in Ver 1.8
 	c_broker_id                   [LEN_BROKER_ID]byte
@@ -261,4 +158,56 @@ type st_oe_reqres struct {
 	si_algo_category              int16    // Added in Ver 2.7
 	ll_lastactivityref            int64    // Added in Ver 2.9
 	c_reserved                    [52]byte // Updated in Ver 2.9
+}
+
+type St_int_header struct {
+	Si_transaction_code int16
+	Li_log_time         int32
+
+	C_alpha_char      [LEN_ALPHA_CHAR]byte
+	Li_trader_id      int32
+	Si_error_code     int16
+	C_filler_2        [8]byte
+	C_time_stamp_1    [LEN_TIME_STAMP]byte
+	C_time_stamp_2    [LEN_TIME_STAMP]byte
+	Si_message_length int16
+}
+
+type St_contract_desc struct {
+	C_instrument_name [LEN_INSTRUMENT_NAME]byte
+	C_symbol          [LEN_SYMBOL_NSE]byte
+	Li_expiry_date    int32
+	Li_strike_price   int32
+	C_option_type     [LEN_OPTION_TYPE]byte
+	Si_ca_level       int16
+}
+
+type St_order_flags struct {
+	flg_ato         uint32 // 1 bit
+	flg_market      uint32 // 1 bit
+	flg_sl          uint32 // 1 bit
+	flg_mit         uint32 // 1 bit
+	flg_day         uint32 // 1 bit
+	flg_gtc         uint32 // 1 bit
+	flg_ioc         uint32 // 1 bit
+	flg_aon         uint32 // 1 bit
+	flg_mf          uint32 // 1 bit
+	flg_matched_ind uint32 // 1 bit
+	flg_traded      uint32 // 1 bit
+	flg_modified    uint32 // 1 bit
+	flg_frozen      uint32 // 1 bit
+	flg_filler1     uint32 // 3 bits
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+type St_pk_sequence struct {
+	c_pipe_id  [3]byte
+	c_trd_dt   [23]byte
+	c_rqst_typ [3]byte
+	i_seq_num  int32
+}
+
+type St_addtnal_order_flags struct {
+	c_cover_uncover byte
 }
