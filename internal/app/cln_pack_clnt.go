@@ -90,6 +90,47 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 
 	row := db.Raw(query, xchngbook.C_xchng_cd, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq).Row()
 
+	/* xchngbook.C_xchng_cd
+	   The value of 'xchngbook.C_xchng_cd' is obtained from a query in 'fn_bat_init':
+
+	   'EXEC SQL
+	   SELECT opm_xchng_cd,
+	          opm_max_pnd_ord,
+	          opm_stream_no
+	   INTO   :sql_c_xchng_cd,
+	          :sql_li_max_pnd_ord,
+	          :i_stream_count_opm
+	   FROM   opm_ord_pipe_mstr
+	   WHERE  opm_pipe_id = :sql_c_pipe_id;'
+	*/
+
+	/* C_pipe_id
+
+	   The value of this is obtained from args[3] and is initialized in 'fn_bat_init'.
+	*/
+
+	/* "C_mod_trd_dt"
+
+	   The value of "C_mod_trd_dt" is obtained from a query in "fn_bat_init" and then set to 'null'. The logic for this is unclear.
+	   [
+	       SELECT exg_nxt_trd_dt,
+	              exg_brkr_id,
+	              exg_ctcl_id
+	       INTO   :sql_c_nxt_trd_date,
+	              :st_opm_mstr.c_xchng_brkr_id,
+	              :sql_c_xchng_ctcl_id
+	       FROM   exg_xchng_mstr
+	       WHERE  exg_xchng_cd = :sql_c_xchng_cd;
+	   ]
+	*/
+
+	/* "L_ord_seq"
+
+	   It is set to 0 in fn_bat_init.
+
+	   st_rqst1.l_ord_seq = li_seq_nm;  // Set to '0' in fn_bat_init.
+	*/
+
 	err := row.Scan(
 		&xchngbook.C_slm_flg,
 		&xchngbook.L_dsclsd_qty,
