@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("Database connection is nil. Failed to connect to the database.")
 	}
 
-	app.CLN_PACK_CLNT(args[1:], DB) // here we are calling the function of cln_pack_clnt
+	app.Fn_bat_init(args[1:], DB) // here we are calling the function of cln_pack_clnt
 
 	tm := &models.TransactionManager{}
 

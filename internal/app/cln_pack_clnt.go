@@ -7,27 +7,57 @@ import (
 	"gorm.io/gorm"
 )
 
-var sql_pipe_id [3]byte
-var sql_c_xchng_cd [4]byte
+// var sql_pipe_id [3]byte
+// var sql_c_xchng_cd [4]byte
 
-func fn_bat_init(args []string, Db *gorm.DB) {
+func Fn_bat_init(args []string, Db *gorm.DB) int {
+	log.Println("Entering fn_bat_init")
 
+	exchngbook := &structures.Vw_xchngbook{}
 	arg := args[3]
-	copy(sql_pipe_id[:], arg)
+	copy(exchngbook.C_pipe_id[:], arg)
 
+	log.Printf("Copying pipe ID: %s", exchngbook.C_pipe_id[:])
+
+	// in original file we are storing the "exchange code in a global variable but here we are directly storing it in the 'exchngbook.C_xchng_cd' "
+	query := `Select opm_xchng_cd
+				From opm_ord_pipe_mstr
+				where opm_pipe_id = ?`
+
+	row := Db.Raw(query, exchngbook.C_pipe_id).Row()
+
+	log.Println("Executing query to fetch exchange code")
+
+	err := row.Scan(&exchngbook.C_xchng_cd)
+	if err != nil {
+		log.Println("Error scanning row:", err)
+		return -1
+	}
+
+	log.Printf("Exchange code fetched: %s", exchngbook.C_xchng_cd)
+	log.Println("Exiting fn_bat_init")
+
+	CLN_PACK_CLNT(args, Db)
+	return 0
 }
 
 func CLN_PACK_CLNT(args []string, Db *gorm.DB) {
-	fnGetNxtCnt(args, Db)
+	log.Println("Entering CLN_PACK_CLNT")
+	fnGetNxtRec(args, Db)
+	log.Println("Exiting CLN_PACK_CLNT")
 }
 
-func fnGetNxtCnt(args []string, Db *gorm.DB) {
+func fnGetNxtRec(args []string, Db *gorm.DB) {
+	log.Println("Entering fnGetNxtCnt")
+
 	exchngbook := &structures.Vw_xchngbook{}
 	fnSeqToOmd(Db, exchngbook)
+
+	log.Println("Exiting fnGetNxtCnt")
 }
 
 func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
-	log.Println("Inside the 'fnSeqToOmd'")
+	log.Println("Entering fnSeqToOmd")
 	log.Println("Before extracting the data from the 'fxb_ordr_rfrnc' and storing it in the 'xchngbook' structure")
 
 	query := `
@@ -56,6 +86,8 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 			)
 	`
 
+	log.Println("Executing query to fetch order details")
+
 	row := db.Raw(query, xchngbook.C_xchng_cd, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq).Row()
 
 	err := row.Scan(
@@ -75,6 +107,18 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 		return -1
 	}
 
+	log.Printf("Data extracted and stored in the 'xchngbook' structure:")
+	log.Printf("  C_slm_flg: %c", xchngbook.C_slm_flg)
+	log.Printf("  L_dsclsd_qty: %d", xchngbook.L_dsclsd_qty)
+	log.Printf("  L_ord_tot_qty: %d", xchngbook.L_ord_tot_qty)
+	log.Printf("  L_ord_lmt_rt: %d", xchngbook.L_ord_lmt_rt)
+	log.Printf("  L_stp_lss_tgr: %d", xchngbook.L_stp_lss_tgr)
+	log.Printf("  C_valid_dt: %s", xchngbook.C_valid_dt)
+	log.Printf("  C_ord_typ: %c", xchngbook.C_ord_typ)
+	log.Printf("  C_req_typ: %c", xchngbook.C_req_typ)
+	log.Printf("  L_ord_seq: %d", xchngbook.L_ord_seq)
+
 	log.Println("Data extracted and stored in the 'xchngbook' structure successfully")
+	log.Println("Exiting fnSeqToOmd")
 	return 0
 }
