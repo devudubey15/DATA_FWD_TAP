@@ -1,6 +1,7 @@
 package app
 
 import (
+	"DATA_FWD_TAP/models"
 	"DATA_FWD_TAP/models/structures"
 	"log"
 
@@ -11,31 +12,66 @@ import (
 // var sql_c_xchng_cd [4]byte
 
 func Fn_bat_init(args []string, Db *gorm.DB) int {
-	log.Println("Entering fn_bat_init")
+	var temp_str string
+	serviceName := "cln_pack_clnt"
 
-	exchngbook := &structures.Vw_xchngbook{}
-	arg := args[3]
-	copy(exchngbook.C_pipe_id[:], arg)
+	log.Printf("[%s] Entering Fn_bat_init", serviceName)
 
-	log.Printf("Copying pipe ID: %s", exchngbook.C_pipe_id[:])
-
-	// in original file we are storing the "exchange code in a global variable but here we are directly storing it in the 'exchngbook.C_xchng_cd' "
-	query := `Select opm_xchng_cd
-				From opm_ord_pipe_mstr
-				where opm_pipe_id = ?`
-
-	row := Db.Raw(query, exchngbook.C_pipe_id).Row()
-
-	log.Println("Executing query to fetch exchange code")
-
-	err := row.Scan(&exchngbook.C_xchng_cd)
-	if err != nil {
-		log.Println("Error scanning row:", err)
+	// we are getting the 7 args
+	if len(args) < 7 {
+		log.Printf("[%s] Error: insufficient arguments provided", serviceName)
 		return -1
 	}
 
-	log.Printf("Exchange code fetched: %s", exchngbook.C_xchng_cd)
-	log.Println("Exiting fn_bat_init")
+	// here we are fetching the Pipe id
+	exchngbook := &structures.Vw_xchngbook{}
+	arg := args[3]
+	copy(exchngbook.C_pipe_id[:], arg)
+	log.Printf("[%s] Copied pipe ID from args[3]: %s", serviceName, exchngbook.C_pipe_id[:])
+
+	// Fetch exchange code
+	query := `SELECT opm_xchng_cd
+				FROM opm_ord_pipe_mstr
+				WHERE opm_pipe_id = ?`
+
+	log.Printf("[%s] Executing query to fetch exchange code with pipe ID: %s", serviceName, exchngbook.C_pipe_id[:])
+	row := Db.Raw(query, exchngbook.C_pipe_id).Row()
+
+	err := row.Scan(&exchngbook.C_xchng_cd)
+	if err != nil {
+		log.Printf("[%s] Error scanning row for exchange code: %v", serviceName, err)
+		return -1
+	}
+
+	log.Printf("[%s] Exchange code fetched: %s", serviceName, exchngbook.C_xchng_cd)
+
+	// Fetch modification trade date
+	query2 := `SELECT exg_nxt_trd_dt
+				FROM exg_xchng_mstr
+				WHERE exg_xchng_cd = ?`
+
+	log.Printf("[%s] Executing query to fetch modification trade date with exchange code: %s", serviceName, exchngbook.C_xchng_cd)
+	row2 := Db.Raw(query2, exchngbook.C_xchng_cd).Row()
+
+	err2 := row2.Scan(temp_str)
+	if err2 != nil {
+		log.Printf("[%s] Error scanning row for modification trade date: %v", serviceName, err2)
+		return -1
+	}
+
+	TmpByteArr := []byte(temp_str)
+	TmpArrLen := len(TmpByteArr)
+
+	copy(exchngbook.C_mod_trd_dt[:], TmpByteArr)
+	models.SETNULL(exchngbook.C_mod_trd_dt[:], TmpArrLen)
+
+	log.Printf("[%s] Modification trade date fetched and set in C_mod_trd_dt: %s", serviceName, exchngbook.C_mod_trd_dt[:TmpArrLen])
+
+	exchngbook.L_ord_seq = 0 // I am initially setting it to '0' because it was set that way in 'fn_bat_init' and I have not seen it getting changed anywhere. If I find it being changed somewhere, I will update it accordingly.
+
+	log.Printf("[%s] L_ord_seq initialized to %d", serviceName, exchngbook.L_ord_seq)
+
+	log.Printf("[%s] Exiting Fn_bat_init", serviceName)
 
 	CLN_PACK_CLNT(args, Db)
 	return 0

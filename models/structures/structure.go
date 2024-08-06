@@ -14,8 +14,8 @@ const (
 )
 
 type Vw_xchngbook struct {
-	C_pipe_id     [3]byte
-	C_mod_trd_dt  [23]byte // checkout this one
+	C_pipe_id     [3]byte  // this variable we are getting from the args[3]
+	C_mod_trd_dt  [23]byte // checkout this one we are getting from table "exg_xchng_mstr"
 	L_ord_seq     int32    // this variable we are gettign from the table
 	C_slm_flg     byte     // this variable we are gettign from the table
 	L_dsclsd_qty  int32    // this variable we are gettign from the table
