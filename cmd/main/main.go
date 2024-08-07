@@ -15,7 +15,7 @@ import (
 func main() {
 
 	args := os.Args
-	var serviceName string
+	serviceName := args[0]
 	// Print the name of the program
 	log.Println("Program :", args[0], " starts")
 
@@ -44,7 +44,7 @@ func main() {
 		log.Fatalf("Failed to load PostgreSQL configuration: %v", err)
 	}
 
-	if config.GetDatabaseConnection(*cfg, serviceName) != 0 { // here we are establishing the connection with the database. so we are calling the function "config.GetDatabaseConnection(*cfg)" in "PosgresqlConfig.go".
+	if config.GetDatabaseConnection(serviceName, *cfg) != 0 { // here we are establishing the connection with the database. so we are calling the function "config.GetDatabaseConnection(*cfg)" in "PosgresqlConfig.go".
 		log.Fatalf("Failed to connect to database")
 	}
 
