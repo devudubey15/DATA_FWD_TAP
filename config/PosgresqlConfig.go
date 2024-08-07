@@ -1,10 +1,10 @@
 package config
 
 import (
+	"DATA_FWD_TAP/models"
 	"fmt"
 	"log"
 
-	"gopkg.in/ini.v1"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -49,28 +49,26 @@ type PostgreSQLConfig struct {
 var database struct {
 	Db *gorm.DB // GORM database connection instance
 }
+var resultTmp int
 
 // LoadPostgreSQLConfig reads the configuration from an INI file and returns a PostgreSQLConfig instance.
 // It takes the file name of the INI file as an argument.
 func LoadPostgreSQLConfig(serviceName string, fileName string) (*PostgreSQLConfig, error) {
-	cfg, err := ini.Load(fileName) // Load the INI file
-	if err != nil {
-		return nil, fmt.Errorf("[%s] failed to read config file: %v", serviceName, err) // Return error if the file can't be read
+	// Initialize the process space with the 'database' section of the INI file
+	resultTmp := models.InitProcessSpace(serviceName, fileName, "database")
+	if resultTmp != 0 {
+		log.Printf("[%s] Failed to read config file: %v", serviceName, resultTmp)
+		return nil, fmt.Errorf("[%s] Failed to read config file: %v", serviceName, resultTmp)
 	}
 
-	section, err := cfg.GetSection("database") // Get the 'database' section from the INI file
-	if err != nil {
-		return nil, fmt.Errorf("[%s] failed to get 'database' section: %v", serviceName, err) // Return error if the section is missing
-	}
-
-	// Create a PostgreSQLConfig instance with values from the INI file
+	// Create a PostgreSQLConfig instance with values from the configMap
 	config := &PostgreSQLConfig{
-		Host:     section.Key("host").String(),     // Read host
-		Port:     section.Key("port").MustInt(),    // Read port (must be an integer)
-		Username: section.Key("username").String(), // Read username
-		Password: section.Key("password").String(), // Read password
-		DBName:   section.Key("dbname").String(),   // Read database name
-		SSLMode:  section.Key("sslmode").String(),  // Read SSL mode
+		Host:     models.GetProcessSpaceValue("host"),
+		Port:     models.GetProcessSpaceValueAsInt("port"),
+		Username: models.GetProcessSpaceValue("username"),
+		Password: models.GetProcessSpaceValue("password"),
+		DBName:   models.GetProcessSpaceValue("dbname"),
+		SSLMode:  models.GetProcessSpaceValue("sslmode"),
 	}
 
 	return config, nil // Return the PostgreSQLConfig instance
@@ -96,6 +94,6 @@ func GetDatabaseConnection(serviceName string, cfg PostgreSQLConfig) int {
 // GetDB returns the currently established database connection as a *gorm.DB instance.
 
 func GetDB(serviceName string) *gorm.DB {
-	log.Printf("[%s] Returning the Database instance ", serviceName)
+	log.Printf("[%s] GetDb is called and Returning the Database instance ", serviceName)
 	return database.Db // Return the GORM database connection instance
 }

@@ -3,65 +3,59 @@ package main
 import (
 	"DATA_FWD_TAP/config"
 	"DATA_FWD_TAP/internal/app"
-	"DATA_FWD_TAP/models"
-	"DATA_FWD_TAP/models/structures"
-	"fmt"
 	"log"
-	"os"
-
-	"time"
 )
 
 func main() {
-
-	args := os.Args
+	// args := os.Args
+	args := []string{"main", "arg1", "arg2", "arg3", "PIPE01", "arg5", "arg6", "arg7"}
 	serviceName := args[0]
+	var resultTmp int
+
 	// Print the name of the program
-	log.Println("Program :", args[0], " starts")
+	log.Printf("[%s] Program %s starts", serviceName, args[0])
 
-	/*configFilePath := filepath.Join("config", "config.ini")
+	/* testing Eviroment.go
+	configFilePath := filepath.Join("config", "config.ini")
 
-	result := models.InitProcessSpace(configFilePath, "Server")
+	result := models.InitProcessSpace(configFilePath, "Server") // here
 	if result != 0 {
-		log.Fatalf("Failed to initialize process space: %d", result)
+		log.Fatalf("[%s] Failed to initialize process space: %d", serviceName, result)
 	}
 
 	// fmt.Println(result)
 
 	tokenValue := models.GetProcessSpaceValue("Host")
 	if tokenValue == "" {
-		log.Println("Token  not found")
+		log.Printf("[%s] Token not found", serviceName)
 	} else {
-		fmt.Printf(" %s\n", tokenValue)
+		fmt.Printf("[%s] %s\n", serviceName, tokenValue)
 	}
 	*/
 	//----------------------------------------------
 
-	//Here we are Loading  PostgreSQL configuration. this function "LoadPostgreSQLConfig" is inside the "PosgresqlConfig.go".
-	cfg, err := config.LoadPostgreSQLConfig("C:/Users/devdu/go-workspace/data_fwd_tap/config/EnvConfig.ini")
-
+	// Here we are loading PostgreSQL configuration
+	cfg, err := config.LoadPostgreSQLConfig(serviceName, "C:/Users/devdu/go-workspace/data_fwd_tap/config/EnvConfig.ini")
 	if err != nil {
-		log.Fatalf("Failed to load PostgreSQL configuration: %v", err)
+		log.Fatalf("[%s] Failed to load PostgreSQL configuration: %v", serviceName, err)
 	}
 
-	if config.GetDatabaseConnection(serviceName, *cfg) != 0 { // here we are establishing the connection with the database. so we are calling the function "config.GetDatabaseConnection(*cfg)" in "PosgresqlConfig.go".
-		log.Fatalf("Failed to connect to database")
+	if config.GetDatabaseConnection(serviceName, *cfg) != 0 {
+		log.Fatalf("[%s] Failed to connect to database", serviceName)
 	}
 
-	DB := config.GetDB()
-
+	DB := config.GetDB(serviceName)
 	if DB == nil {
-		log.Fatalf("Database connection is nil. Failed to connect to the database.")
+		log.Fatalf("[%s] Database connection is nil. Failed to get the database instance.", serviceName)
 	}
 
-	app.Fn_bat_init(args[1:], DB) // here we are calling the function of cln_pack_clnt
+	/* Tuxlib.go Testing
+	tm := &models.TransactionManager{} // This creates a variable of the structure defined in Tuxlib.go. The field in this structure is an instance of the database. Throughout the transaction, we have to use the same database instance.
 
-	tm := &models.TransactionManager{}
-
-	tranType := tm.FnBeginTran() // trasaction begins here. Here we are calling the "FnBeginTran()" of "Tuxlib.go".
+	tranType := tm.FnBeginTran(serviceName) // transaction begins here. Here we are calling the "FnBeginTran()" of "Tuxlib.go".
 
 	if tranType == -1 {
-		log.Fatalf("Failed to begin transaction")
+		log.Fatalf("[%s] Failed to begin transaction", serviceName)
 	}
 
 	user := structures.User{
@@ -69,7 +63,7 @@ func main() {
 		Email:    "new_user@example.com",
 	}
 	if err := tm.Tran.Create(&user).Error; err != nil {
-		log.Fatalf("Failed to insert new user: %v", err)
+		log.Fatalf("[%s] Failed to insert new user: %v", serviceName, err)
 	}
 
 	product := structures.Product{
@@ -79,7 +73,7 @@ func main() {
 		StockQuantity: 200,
 	}
 	if err := tm.Tran.Create(&product).Error; err != nil {
-		log.Fatalf("Failed to insert new product: %v", err)
+		log.Fatalf("[%s] Failed to insert new product: %v", serviceName, err)
 	}
 
 	order := structures.Order{
@@ -89,7 +83,7 @@ func main() {
 		Status:    "Pending",
 	}
 	if err := tm.Tran.Create(&order).Error; err != nil {
-		log.Fatalf("Failed to insert new order: %v", err)
+		log.Fatalf("[%s] Failed to insert new order: %v", serviceName, err)
 	}
 
 	orderItem := structures.OrderItem{
@@ -99,30 +93,39 @@ func main() {
 		Price:     39.99,
 	}
 	if err := tm.Tran.Create(&orderItem).Error; err != nil {
-		log.Fatalf("Failed to insert new order item: %v", err)
+		log.Fatalf("[%s] Failed to insert new order item: %v", serviceName, err)
 	}
 
 	// Sample Read Operation
 	var fetchedUser structures.User
 	if err := tm.Tran.First(&fetchedUser, "username = ?", "new_user").Error; err != nil {
-		log.Fatalf("Failed to fetch user: %v", err)
+		log.Fatalf("[%s] Failed to fetch user: %v", serviceName, err)
 	}
-	fmt.Printf("Fetched User: %+v\n", fetchedUser)
+	fmt.Printf("[%s] Fetched User: %+v\n", serviceName, fetchedUser)
 
 	// Sample Update Operation
 	if err := tm.Tran.Model(&fetchedUser).Update("Email", "updated_user@example.com").Error; err != nil {
-		log.Fatalf("Failed to update user email: %v", err)
+		log.Fatalf("[%s] Failed to update user email: %v", serviceName, err)
 	}
 
 	// Sample Delete Operation
 	if err := tm.Tran.Delete(&fetchedUser).Error; err != nil {
-		log.Fatalf("Failed to delete user: %v", err)
+		log.Fatalf("[%s] Failed to delete user: %v", serviceName, err)
 	}
 
-	if tm.FnCommitTran(tranType) != 0 {
-		log.Fatalf("Failed to commit transaction")
+	if tm.FnCommitTran(serviceName, tranType) != 0 {
+		log.Fatalf("[%s] Failed to commit transaction", serviceName)
 	}
 
-	fmt.Println("Transaction successfully committed")
+	fmt.Printf("[%s] Transaction successfully committed\n", serviceName)
+	*/
+
+	// Testing "cln_pack_clnt.go"
+	resultTmp = app.Fn_bat_init(args[1:], DB)
+
+	if resultTmp != 0 {
+		log.Printf("[%s] Fn_bat_init failed with result code: %d", serviceName, resultTmp)
+		log.Fatal("Shutting down due to error") // log.Fatal logs the message and exits with status 1
+	}
 
 }

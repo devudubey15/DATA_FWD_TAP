@@ -2,6 +2,7 @@ package models
 
 import (
 	"log"
+	"strconv"
 
 	"gopkg.in/ini.v1"
 )
@@ -17,7 +18,7 @@ import (
 /*                        - InitProcessSpace: Loads the INI file, retrieves the    */
 /*                          specified section, and stores key-value pairs in the   */
 /*                          configMap. Validates the number of tokens against      */
-/*                          MaxToken limit.
+/*                          MaxToken limit.                                        */
 /*											                                       */
 /*                        - GetProcessSpaceValue: Fetches the value associated     */
 /*                          with a given key (token) from the configMap.           */
@@ -33,39 +34,65 @@ const (
 )
 
 var configMap map[string]string
+var serviceName string
 
-func InitProcessSpace(FileName string, ProcessName string) int {
+func InitProcessSpace(serviceName1 string, FileName string, ProcessName string) int {
+	serviceName = serviceName1
+	log.Printf("[%s] Initializing process space", serviceName)
+
 	cfg, err := ini.Load(FileName)
 	if err != nil {
-		log.Printf("INI File: %s: %v", FileName, err)
+		log.Printf("[%s] Error loading INI file: %s, Error: %v", serviceName, FileName, err)
 		return -1
 	}
+
+	log.Printf("[%s] Successfully loaded INI file: %s", serviceName, FileName)
 
 	section, err := cfg.GetSection(ProcessName)
 	if err != nil {
-		log.Printf("%s Not Specified in the INI File %s: %v", ProcessName, FileName, err)
+		log.Printf("[%s] Section '%s' not specified in INI file: %s, Error: %v", serviceName, ProcessName, FileName, err)
 		return -1
 	}
+
+	log.Printf("[%s] Successfully retrieved section: %s from INI file: %s", serviceName, ProcessName, FileName)
 
 	configMap = make(map[string]string)
 
 	for _, key := range section.Keys() {
 		configMap[key.Name()] = key.String()
+		log.Printf("[%s] Loaded key: %s, value: %s", serviceName, key.Name(), key.String())
 	}
 
 	if len(configMap) > MaxToken {
-		log.Printf("Exceeding max token limit: MAXTOKEN: %d, Count of Token: %d", MaxToken, len(configMap))
+		log.Printf("[%s] Exceeding max token limit: MaxToken: %d, Count of tokens: %d", serviceName, MaxToken, len(configMap))
 		return -1
 	}
 
+	log.Printf("[%s] Process space initialized successfully with %d tokens", serviceName, len(configMap))
 	return 0
 }
 
 func GetProcessSpaceValue(token string) string {
 	value, found := configMap[token]
 	if !found {
-		log.Printf("Token '%s' not found\n", token)
+		log.Printf("[%s] Token '%s' not found in configuration map", serviceName, token)
 		return ""
 	}
-	return value // here we are returning the value of given Macro
+	log.Printf("[%s] Retrieved value for token '%s': %s", serviceName, token, value)
+	return value
+}
+
+func GetProcessSpaceValueAsInt(token string) int {
+	valueStr, found := configMap[token]
+	if !found {
+		log.Printf("[%s] Token '%s' not found in configuration map", serviceName, token)
+		return -1
+	}
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		log.Printf("[%s] Failed to convert token '%s' value '%s' to integer: %v", serviceName, token, valueStr, err)
+		return -1
+	}
+	log.Printf("[%s] Retrieved integer value for token '%s': %d", serviceName, token, value)
+	return value
 }

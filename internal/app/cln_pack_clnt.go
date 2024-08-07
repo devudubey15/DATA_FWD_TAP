@@ -10,11 +10,11 @@ import (
 
 // var sql_pipe_id [3]byte
 // var sql_c_xchng_cd [4]byte
+var serviceName string = "cln_pack_clnt"
 
 func Fn_bat_init(args []string, Db *gorm.DB) int {
 	var temp_str string
-	serviceName := "cln_pack_clnt"
-
+	var resultTmp int
 	log.Printf("[%s] Entering Fn_bat_init", serviceName)
 
 	// we are getting the 7 args
@@ -63,7 +63,7 @@ func Fn_bat_init(args []string, Db *gorm.DB) int {
 	TmpArrLen := len(TmpByteArr)
 
 	copy(exchngbook.C_mod_trd_dt[:], TmpByteArr)
-	models.SETNULL(exchngbook.C_mod_trd_dt[:], TmpArrLen)
+	models.SETNULL(serviceName, exchngbook.C_mod_trd_dt[:], TmpArrLen)
 
 	log.Printf("[%s] Modification trade date fetched and set in C_mod_trd_dt: %s", serviceName, exchngbook.C_mod_trd_dt[:TmpArrLen])
 
@@ -73,28 +73,47 @@ func Fn_bat_init(args []string, Db *gorm.DB) int {
 
 	log.Printf("[%s] Exiting Fn_bat_init", serviceName)
 
-	CLN_PACK_CLNT(args, Db)
+	resultTmp = CLN_PACK_CLNT(args, Db)
+	if resultTmp != 0 {
+		log.Printf("[%s] CLN_PACK_CLNT failed with result code: %d", serviceName, resultTmp)
+		log.Printf("[%s] Returning to main from fn_bat_init", serviceName)
+		return -1
+	}
 	return 0
 }
 
-func CLN_PACK_CLNT(args []string, Db *gorm.DB) {
-	log.Println("Entering CLN_PACK_CLNT")
-	fnGetNxtRec(args, Db)
-	log.Println("Exiting CLN_PACK_CLNT")
+func CLN_PACK_CLNT(args []string, Db *gorm.DB) int {
+	var resultTmp int
+
+	log.Printf("[%s] Entering CLN_PACK_CLNT", serviceName)
+	resultTmp = fnGetNxtRec(args, Db)
+	if resultTmp != 0 {
+		log.Printf("[%s] failed in getting the next record returning with result code: %d", serviceName, resultTmp)
+		log.Printf("[%s] Exiting CLN_PACK_CLNT with error", serviceName)
+		return -1
+	}
+	log.Printf("[%s] Exiting CLN_PACK_CLNT", serviceName)
+	return 0
 }
 
-func fnGetNxtRec(args []string, Db *gorm.DB) {
-	log.Println("Entering fnGetNxtCnt")
+func fnGetNxtRec(args []string, Db *gorm.DB) int {
+	log.Printf("[%s] Entering fnGetNxtRec", serviceName)
 
 	exchngbook := &structures.Vw_xchngbook{}
-	fnSeqToOmd(Db, exchngbook)
 
-	log.Println("Exiting fnGetNxtCnt")
+	resultTmp := fnSeqToOmd(Db, exchngbook)
+	if resultTmp != 0 {
+		log.Printf("[%s] Failed to fetch data into exchngbook structure", serviceName)
+		return -1
+	}
+
+	log.Printf("[%s] Exiting fnGetNxtRec", serviceName)
+	return 0
 }
 
 func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
-	log.Println("Entering fnSeqToOmd")
-	log.Println("Before extracting the data from the 'fxb_ordr_rfrnc' and storing it in the 'xchngbook' structure")
+	log.Printf("[%s] Entering fnSeqToOmd", serviceName)
+	log.Printf("[%s] Before extracting the data from the 'fxb_ordr_rfrnc' and storing it in the 'xchngbook' structure", serviceName)
 
 	query := `
 		SELECT fxb_ordr_rfrnc,
@@ -122,7 +141,7 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 			)
 	`
 
-	log.Println("Executing query to fetch order details")
+	log.Printf("[%s] Executing query to fetch order details", serviceName)
 
 	row := db.Raw(query, xchngbook.C_xchng_cd, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq).Row()
 
@@ -180,22 +199,23 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 	)
 
 	if err != nil {
-		log.Println("Error scanning row:", err)
+		log.Printf("[%s] Error scanning row: %v", serviceName, err)
+		log.Printf("[%s] Exiting fnSeqToOmd with error", serviceName)
 		return -1
 	}
 
-	log.Printf("Data extracted and stored in the 'xchngbook' structure:")
-	log.Printf("  C_slm_flg: %c", xchngbook.C_slm_flg)
-	log.Printf("  L_dsclsd_qty: %d", xchngbook.L_dsclsd_qty)
-	log.Printf("  L_ord_tot_qty: %d", xchngbook.L_ord_tot_qty)
-	log.Printf("  L_ord_lmt_rt: %d", xchngbook.L_ord_lmt_rt)
-	log.Printf("  L_stp_lss_tgr: %d", xchngbook.L_stp_lss_tgr)
-	log.Printf("  C_valid_dt: %s", xchngbook.C_valid_dt)
-	log.Printf("  C_ord_typ: %c", xchngbook.C_ord_typ)
-	log.Printf("  C_req_typ: %c", xchngbook.C_req_typ)
-	log.Printf("  L_ord_seq: %d", xchngbook.L_ord_seq)
+	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure:", serviceName)
+	log.Printf("[%s]   C_slm_flg: %c", serviceName, xchngbook.C_slm_flg)
+	log.Printf("[%s]   L_dsclsd_qty: %d", serviceName, xchngbook.L_dsclsd_qty)
+	log.Printf("[%s]   L_ord_tot_qty: %d", serviceName, xchngbook.L_ord_tot_qty)
+	log.Printf("[%s]   L_ord_lmt_rt: %d", serviceName, xchngbook.L_ord_lmt_rt)
+	log.Printf("[%s]   L_stp_lss_tgr: %d", serviceName, xchngbook.L_stp_lss_tgr)
+	log.Printf("[%s]   C_valid_dt: %s", serviceName, xchngbook.C_valid_dt)
+	log.Printf("[%s]   C_ord_typ: %c", serviceName, xchngbook.C_ord_typ)
+	log.Printf("[%s]   C_req_typ: %c", serviceName, xchngbook.C_req_typ)
+	log.Printf("[%s]   L_ord_seq: %d", serviceName, xchngbook.L_ord_seq)
 
-	log.Println("Data extracted and stored in the 'xchngbook' structure successfully")
-	log.Println("Exiting fnSeqToOmd")
+	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure successfully", serviceName)
+	log.Printf("[%s] Exiting fnSeqToOmd", serviceName)
 	return 0
 }
