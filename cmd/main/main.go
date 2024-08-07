@@ -15,7 +15,7 @@ import (
 func main() {
 
 	args := os.Args
-
+	var serviceName string
 	// Print the name of the program
 	log.Println("Program :", args[0], " starts")
 
@@ -37,14 +37,14 @@ func main() {
 	*/
 	//----------------------------------------------
 
-	//Here we are Loading  PostgreSQL configuration
+	//Here we are Loading  PostgreSQL configuration. this function "LoadPostgreSQLConfig" is inside the "PosgresqlConfig.go".
 	cfg, err := config.LoadPostgreSQLConfig("C:/Users/devdu/go-workspace/data_fwd_tap/config/EnvConfig.ini")
 
 	if err != nil {
 		log.Fatalf("Failed to load PostgreSQL configuration: %v", err)
 	}
 
-	if config.GetDatabaseConnection(*cfg) != 0 {
+	if config.GetDatabaseConnection(*cfg, serviceName) != 0 { // here we are establishing the connection with the database. so we are calling the function "config.GetDatabaseConnection(*cfg)" in "PosgresqlConfig.go".
 		log.Fatalf("Failed to connect to database")
 	}
 
@@ -58,7 +58,7 @@ func main() {
 
 	tm := &models.TransactionManager{}
 
-	tranType := tm.FnBeginTran() // trasaction begins here
+	tranType := tm.FnBeginTran() // trasaction begins here. Here we are calling the "FnBeginTran()" of "Tuxlib.go".
 
 	if tranType == -1 {
 		log.Fatalf("Failed to begin transaction")

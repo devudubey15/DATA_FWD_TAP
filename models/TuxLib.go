@@ -24,7 +24,7 @@ func (tm *TransactionManager) FnBeginTran() int {
 	// Check if a transaction is already active (GORM does not provide tpgetlev equivalent, manage this externally if needed)
 
 	var TranType int
-	db := config.GetDB()
+	db := config.GetDB() // here we are getting the database instance and then we are checking if there is any active transaction going on.
 
 	err := PingDatabase(db) // here we are using PingDatabase to check if there is any active transaction
 
@@ -65,6 +65,7 @@ func (tm *TransactionManager) FnCommitTran(tranType int) int {
 		log.Println("Transaction committed")
 	} else if tranType == REMOTE_TRNSCTN {
 		// No log needed
+		// here we are not commiting the transaction because the transaction type is "REMOTE_TRNSCTN"
 	} else {
 		errMsg := fmt.Sprintf("Invalid Transaction Number |%d|", tranType)
 		log.Println(errMsg)
