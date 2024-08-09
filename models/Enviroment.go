@@ -33,66 +33,68 @@ const (
 	MaxToken = 50
 )
 
-var configMap map[string]string
-var serviceName string
+type EnvironmentManager struct {
+	ConfigMap   map[string]string
+	ServiceName string
+}
 
-func InitProcessSpace(serviceName1 string, FileName string, ProcessName string) int {
-	serviceName = serviceName1
-	log.Printf("[%s] Initializing process space", serviceName)
+func (Em *EnvironmentManager) InitProcessSpace(serviceName1 string, FileName string, ProcessName string) int {
+	Em.ServiceName = serviceName1
+	log.Printf("[%s] Initializing process space", Em.ServiceName)
 
 	cfg, err := ini.Load(FileName)
 	if err != nil {
-		log.Printf("[%s] Error loading INI file: %s, Error: %v", serviceName, FileName, err)
+		log.Printf("[%s] Error loading INI file: %s, Error: %v", Em.ServiceName, FileName, err)
 		return -1
 	}
 
-	log.Printf("[%s] Successfully loaded INI file: %s", serviceName, FileName)
+	log.Printf("[%s] Successfully loaded INI file: %s", Em.ServiceName, FileName)
 
 	section, err := cfg.GetSection(ProcessName)
 	if err != nil {
-		log.Printf("[%s] Section '%s' not specified in INI file: %s, Error: %v", serviceName, ProcessName, FileName, err)
+		log.Printf("[%s] Section '%s' not specified in INI file: %s, Error: %v", Em.ServiceName, ProcessName, FileName, err)
 		return -1
 	}
 
-	log.Printf("[%s] Successfully retrieved section: %s from INI file: %s", serviceName, ProcessName, FileName)
+	log.Printf("[%s] Successfully retrieved section: %s from INI file: %s", Em.ServiceName, ProcessName, FileName)
 
-	configMap = make(map[string]string)
+	Em.ConfigMap = make(map[string]string)
 
 	for _, key := range section.Keys() {
-		configMap[key.Name()] = key.String()
-		log.Printf("[%s] Loaded key: %s, value: %s", serviceName, key.Name(), key.String())
+		Em.ConfigMap[key.Name()] = key.String()
+		log.Printf("[%s] Loaded key: %s, value: %s", Em.ServiceName, key.Name(), key.String())
 	}
 
-	if len(configMap) > MaxToken {
-		log.Printf("[%s] Exceeding max token limit: MaxToken: %d, Count of tokens: %d", serviceName, MaxToken, len(configMap))
+	if len(Em.ConfigMap) > MaxToken {
+		log.Printf("[%s] Exceeding max token limit: MaxToken: %d, Count of tokens: %d", Em.ServiceName, MaxToken, len(Em.ConfigMap))
 		return -1
 	}
 
-	log.Printf("[%s] Process space initialized successfully with %d tokens", serviceName, len(configMap))
+	log.Printf("[%s] Process space initialized successfully with %d tokens", Em.ServiceName, len(Em.ConfigMap))
 	return 0
 }
 
-func GetProcessSpaceValue(token string) string {
-	value, found := configMap[token]
+func (Em *EnvironmentManager) GetProcessSpaceValue(token string) string {
+	value, found := Em.ConfigMap[token]
 	if !found {
-		log.Printf("[%s] Token '%s' not found in configuration map", serviceName, token)
+		log.Printf("[%s] Token '%s' not found in configuration map", Em.ServiceName, token)
 		return ""
 	}
-	log.Printf("[%s] Retrieved value for token '%s': %s", serviceName, token, value)
+	log.Printf("[%s] Retrieved value for token '%s': %s", Em.ConfigMap, token, value)
 	return value
 }
 
-func GetProcessSpaceValueAsInt(token string) int {
-	valueStr, found := configMap[token]
+func (Em *EnvironmentManager) GetProcessSpaceValueAsInt(token string) int {
+	valueStr, found := Em.ConfigMap[token]
 	if !found {
-		log.Printf("[%s] Token '%s' not found in configuration map", serviceName, token)
+		log.Printf("[%s] Token '%s' not found in configuration map", Em.ServiceName, token)
 		return -1
 	}
 	value, err := strconv.Atoi(valueStr)
 	if err != nil {
-		log.Printf("[%s] Failed to convert token '%s' value '%s' to integer: %v", serviceName, token, valueStr, err)
+		log.Printf("[%s] Failed to convert token '%s' value '%s' to integer: %v", Em.ServiceName, token, valueStr, err)
 		return -1
 	}
-	log.Printf("[%s] Retrieved integer value for token '%s': %d", serviceName, token, value)
+	log.Printf("[%s] Retrieved integer value for token '%s': %d", Em.ServiceName, token, value)
 	return value
 }

@@ -25,45 +25,50 @@ func Fn_bat_init(args []string, Db *gorm.DB) int {
 
 	// here we are fetching the Pipe id
 	exchngbook := &structures.Vw_xchngbook{}
-	arg := args[3]
-	copy(exchngbook.C_pipe_id[:], arg)
+
+	exchngbook.C_pipe_id = args[3]
+
 	log.Printf("[%s] Copied pipe ID from args[3]: %s", serviceName, exchngbook.C_pipe_id[:])
 
 	// Fetch exchange code
-	query := `SELECT opm_xchng_cd
+	queryForOpm_Xchng_Cd := `SELECT opm_xchng_cd
 				FROM opm_ord_pipe_mstr
 				WHERE opm_pipe_id = ?`
 
 	log.Printf("[%s] Executing query to fetch exchange code with pipe ID: %s", serviceName, exchngbook.C_pipe_id[:])
-	row := Db.Raw(query, exchngbook.C_pipe_id).Row()
 
-	err := row.Scan(&exchngbook.C_xchng_cd)
+	row := Db.Raw(queryForOpm_Xchng_Cd, exchngbook.C_pipe_id).Row()
+	temp_str = ""
+	err := row.Scan(&temp_str)
 	if err != nil {
 		log.Printf("[%s] Error scanning row for exchange code: %v", serviceName, err)
 		return -1
 	}
 
+	exchngbook.C_xchng_cd = temp_str
+	temp_str = ""
 	log.Printf("[%s] Exchange code fetched: %s", serviceName, exchngbook.C_xchng_cd)
 
 	// Fetch modification trade date
-	query2 := `SELECT exg_nxt_trd_dt
+	queryFor_exg_nxt_trd_dt := `SELECT exg_nxt_trd_dt
 				FROM exg_xchng_mstr
 				WHERE exg_xchng_cd = ?`
 
 	log.Printf("[%s] Executing query to fetch modification trade date with exchange code: %s", serviceName, exchngbook.C_xchng_cd)
-	row2 := Db.Raw(query2, exchngbook.C_xchng_cd).Row()
+	row2 := Db.Raw(queryFor_exg_nxt_trd_dt, exchngbook.C_xchng_cd).Row()
 
-	err2 := row2.Scan(temp_str)
+	err2 := row2.Scan(&temp_str)
 	if err2 != nil {
 		log.Printf("[%s] Error scanning row for modification trade date: %v", serviceName, err2)
 		return -1
 	}
 
-	TmpByteArr := []byte(temp_str)
-	TmpArrLen := len(TmpByteArr)
+	TmpByteArr := []byte(temp_str) // these i have to look again
+	TmpArrLen := len(TmpByteArr)   // this i have to look again
 
-	copy(exchngbook.C_mod_trd_dt[:], TmpByteArr)
-	models.SETNULL(serviceName, exchngbook.C_mod_trd_dt[:], TmpArrLen)
+	exchngbook.C_mod_trd_dt = temp_str
+
+	models.SETNULL(serviceName, []byte(exchngbook.C_mod_trd_dt), TmpArrLen)
 
 	log.Printf("[%s] Modification trade date fetched and set in C_mod_trd_dt: %s", serviceName, exchngbook.C_mod_trd_dt[:TmpArrLen])
 
@@ -116,34 +121,46 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 	log.Printf("[%s] Before extracting the data from the 'fxb_ordr_rfrnc' and storing it in the 'xchngbook' structure", serviceName)
 
 	query := `
-		SELECT fxb_ordr_rfrnc,
-			fxb_lmt_mrkt_sl_flg,
-			fxb_dsclsd_qty,
-			fxb_ordr_tot_qty,
-			fxb_lmt_rt,
-			fxb_stp_lss_tgr,
-			to_char(fxb_ordr_valid_dt, 'dd-mon-yyyy') as valid_dt,
-			DECODE(fxb_ordr_type, 'V', 'T', fxb_ordr_type) as ord_typ,
-			fxb_rqst_typ,
-			fxb_ordr_sqnc
-			FROM FXB_FO_XCHNG_BOOK
-			WHERE 
-			fxb_xchng_cd = ?
-			AND fxb_pipe_id = ?
-			AND fxb_mod_trd_dt = to_date(?, 'dd-Mon-yyyy')
-			AND fxb_ordr_sqnc = (
-				SELECT min(fxb_b.fxb_ordr_sqnc)
-				FROM FXB_FO_XCHNG_BOOK fxb_b
-				WHERE fxb_b.fxb_xchng_cd = ?
-					AND fxb_b.fxb_mod_trd_dt = to_date(?, 'dd-Mon-yyyy')
-					AND fxb_b.fxb_pipe_id = ?
-					AND fxb_b.fxb_plcd_stts = 'R'
-			)
-	`
+	SELECT fxb_ordr_rfrnc,
+       fxb_lmt_mrkt_sl_flg,
+       fxb_dsclsd_qty,
+       fxb_ordr_tot_qty,
+       fxb_lmt_rt,
+       fxb_stp_lss_tgr,
+       TO_CHAR(TO_DATE(fxb_ordr_valid_dt, 'YYYY-MM-DD'), 'DD-Mon-YYYY') AS valid_dt,
+       CASE
+           WHEN fxb_ordr_type = 'V' THEN 'T'
+           ELSE fxb_ordr_type
+       END AS ord_typ,
+       fxb_rqst_typ,
+       fxb_ordr_sqnc
+FROM FXB_FO_XCHNG_BOOK
+WHERE fxb_xchng_cd = ?
+  AND fxb_pipe_id = ?
+  AND TO_DATE(fxb_mod_trd_dt, 'YYYY-MM-DD') = TO_DATE(?, 'YYYY-MM-DD')
+  AND fxb_ordr_sqnc = (
+      SELECT MIN(fxb_b.fxb_ordr_sqnc)
+      FROM FXB_FO_XCHNG_BOOK fxb_b
+      WHERE fxb_b.fxb_xchng_cd = ?
+        AND TO_DATE(fxb_b.fxb_mod_trd_dt, 'YYYY-MM-DD') = TO_DATE(?, 'YYYY-MM-DD')
+        AND fxb_b.fxb_pipe_id = ?
+        AND fxb_b.fxb_plcd_stts = 'R'
+  )
+`
 
 	log.Printf("[%s] Executing query to fetch order details", serviceName)
 
-	row := db.Raw(query, xchngbook.C_xchng_cd, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq, xchngbook.C_pipe_id[:], xchngbook.C_mod_trd_dt[:], xchngbook.L_ord_seq).Row()
+	log.Printf("[%s] C_xchng_cd: %s", serviceName, xchngbook.C_xchng_cd)
+	log.Printf("[%s] C_pipe_id: %s", serviceName, xchngbook.C_pipe_id)
+	log.Printf("[%s] C_mod_trd_dt: %s", serviceName, xchngbook.C_mod_trd_dt)
+
+	row := db.Raw(query,
+		xchngbook.C_xchng_cd,
+		xchngbook.C_pipe_id,
+		xchngbook.C_mod_trd_dt,
+		xchngbook.C_xchng_cd,
+		xchngbook.C_mod_trd_dt,
+		xchngbook.C_pipe_id).Row()
 
 	/* xchngbook.C_xchng_cd
 	   The value of 'xchngbook.C_xchng_cd' is obtained from a query in 'fn_bat_init':
@@ -218,4 +235,6 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
 	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure successfully", serviceName)
 	log.Printf("[%s] Exiting fnSeqToOmd", serviceName)
 	return 0
+
+	// comment for first commit of the day (09/08/2024)
 }

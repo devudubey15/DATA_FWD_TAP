@@ -1,7 +1,7 @@
 package models
 
 import (
-	"DATA_FWD_TAP/config"
+	"DATA_FWD_TAP/common"
 	"fmt"
 	"log"
 
@@ -36,7 +36,8 @@ const (
 )
 
 type TransactionManager struct {
-	Tran *gorm.DB
+	Tran       *gorm.DB
+	DbAccessor common.DBAccessor
 }
 
 func (tm *TransactionManager) FnBeginTran(serviceName string) int {
@@ -44,7 +45,7 @@ func (tm *TransactionManager) FnBeginTran(serviceName string) int {
 	// Check if a transaction is already active (GORM does not provide tpgetlev equivalent, manage this externally if needed)
 
 	var TranType int
-	db := config.GetDB(serviceName) // Get the database instance on this instance we will check if there is any active transaction.
+	db := tm.DbAccessor.GetDB(serviceName) // Get the database instance on this instance we will check if there is any active transaction.
 
 	err := PingDatabase(serviceName, db) // Use PingDatabase to check if there is any active transaction.
 

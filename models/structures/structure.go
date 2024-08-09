@@ -14,18 +14,18 @@ const (
 )
 
 type Vw_xchngbook struct {
-	C_pipe_id     [3]byte  // this variable we are getting from the args[3]
-	C_mod_trd_dt  [23]byte // checkout this one we are getting from table "exg_xchng_mstr"
-	L_ord_seq     int32    // this variable we are gettign from the table
-	C_slm_flg     byte     // this variable we are gettign from the table
-	L_dsclsd_qty  int32    // this variable we are gettign from the table
-	L_ord_tot_qty int32    // this variable we are gettign from the table
-	L_ord_lmt_rt  int32    // this variable we are gettign from the table
-	L_stp_lss_tgr int32    // this variable we are gettign from the table
-	C_ord_typ     byte     // this variable we are gettign from the table
-	C_req_typ     byte     // this variable we are gettign from the table
-	C_valid_dt    [23]byte // this variable we are gettign from the table
-	C_xchng_cd    [4]byte  //
+	C_pipe_id     string // this variable we are getting from the args[3]
+	C_mod_trd_dt  string // checkout this one, we are getting from table "exg_xchng_mstr"
+	L_ord_seq     int32  // this variable we are gettign from the table
+	C_slm_flg     byte   // this variable we are gettign from the table
+	L_dsclsd_qty  int32  // this variable we are gettign from the table
+	L_ord_tot_qty int32  // this variable we are gettign from the table
+	L_ord_lmt_rt  int32  // this variable we are gettign from the table
+	L_stp_lss_tgr int32  // this variable we are gettign from the table
+	C_ord_typ     byte   // this variable we are gettign from the table
+	C_req_typ     byte   // this variable we are gettign from the table
+	C_valid_dt    string // this variable we are gettign from the table
+	C_xchng_cd    string // this we are getting from "opm_ord_pipe_mstr"
 }
 
 /*
@@ -33,18 +33,18 @@ type Vw_xchngbook struct {
 */
 
 type Vw_orderbook struct {
-	c_cln_mtch_accnt [11]byte
+	c_cln_mtch_accnt string
 	c_ordr_flw       byte
 	l_ord_tot_qty    int32
 	l_exctd_qty      int32
 	l_exctd_qty_day  int32
-	c_settlor        [13]byte
+	c_settlor        string
 
 	c_spl_flg     byte
-	c_ack_tm      [23]byte
-	c_prev_ack_tm [23]byte
+	c_ack_tm      string
+	c_prev_ack_tm string
 	c_pro_cli_ind byte
-	c_ctcl_id     [16]byte
+	c_ctcl_id     string
 }
 
 /*
@@ -54,7 +54,7 @@ type Vw_orderbook struct {
 type Vw_nse_cntrct struct {
 	c_prd_typ      byte
 	c_ctgry_indstk byte
-	c_symbol       [11]byte
+	c_symbol       string
 	l_ca_lvl       int32
 	l_token_id     int32
 }
@@ -73,10 +73,10 @@ type St_opm_pipe_mstr struct {
 		int si_user_typ_glb;	 //----------------------(this one is used) "this one we are getting from "cofiguration file" "GetProcessSpaceValue()""
 
 	*/
-	li_opm_brnch_id int64   // null=-1
-	c_xchng_brkr_id [6]byte // null="*"
-	c_opm_trdr_id   [6]byte // null="*"
-	si_user_typ_glb int     // null=0   (i think , it can be 0 (for trader) , 4 (for CORPORATE_MANAGER) , 5 (for BRANCH_MANAGER) )
+	li_opm_brnch_id int64  // null=-1
+	c_xchng_brkr_id string // null="*"
+	c_opm_trdr_id   string // null="*"
+	si_user_typ_glb int    // null=0   (i think , it can be 0 (for trader) , 4 (for CORPORATE_MANAGER) , 5 (for BRANCH_MANAGER) )
 
 }
 
@@ -115,12 +115,12 @@ type St_oe_reqres struct {
 	c_modified_cancelled_by       byte
 	c_filler_2                    byte
 	si_reason_code                int16
-	c_filler_3                    [4]byte
+	c_filler_3                    string
 	l_token_no                    int32
 	st_con_desc                   St_contract_desc
 	c_counter_party_broker_id     [LEN_BROKER_ID]byte
 	c_filler_4                    byte
-	c_filler_5                    [2]byte
+	c_filler_5                    string
 	c_closeout_flg                byte
 	c_filler_6                    byte
 	si_order_type                 int16
@@ -153,11 +153,11 @@ type St_oe_reqres struct {
 	i_order_seq                   int32 // Changed from i_ordr_rfrnc to i_ordr_sqnc in Ver 1.7
 	d_nnf_field                   float64
 	d_filler19                    float64
-	c_pan                         [10]byte // Added in Ver 2.7
-	l_algo_id                     int32    // Added in Ver 2.7
-	si_algo_category              int16    // Added in Ver 2.7
-	ll_lastactivityref            int64    // Added in Ver 2.9
-	c_reserved                    [52]byte // Updated in Ver 2.9
+	c_pan                         string // Added in Ver 2.7
+	l_algo_id                     int32  // Added in Ver 2.7
+	si_algo_category              int16  // Added in Ver 2.7
+	ll_lastactivityref            int64  // Added in Ver 2.9
+	c_reserved                    string // Updated in Ver 2.9
 }
 
 type St_int_header struct {
@@ -167,7 +167,7 @@ type St_int_header struct {
 	C_alpha_char      [LEN_ALPHA_CHAR]byte
 	Li_trader_id      int32
 	Si_error_code     int16
-	C_filler_2        [8]byte
+	C_filler_2        string
 	C_time_stamp_1    [LEN_TIME_STAMP]byte
 	C_time_stamp_2    [LEN_TIME_STAMP]byte
 	Si_message_length int16
@@ -202,9 +202,9 @@ type St_order_flags struct {
 //-------------------------------------------------------------------------------------------------------------------
 
 type St_pk_sequence struct {
-	c_pipe_id  [3]byte
-	c_trd_dt   [23]byte
-	c_rqst_typ [3]byte
+	c_pipe_id  string
+	c_trd_dt   string
+	c_rqst_typ string
 	i_seq_num  int32
 }
 
