@@ -360,6 +360,37 @@ FOR UPDATE NOWAIT;
 
 	log.Printf("[%s] Data extracted and stored in the 'orderbook' structure successfully", cpcm.serviceName)
 
+	clmQuery := `
+    SELECT
+    COALESCE(TRIM(CLM_CP_CD), ' '),
+    COALESCE(TRIM(CLM_CLNT_CD), CLM_MTCH_ACCNT)
+	FROM
+    CLM_CLNT_MSTR
+	WHERE
+    CLM_MTCH_ACCNT = ?
+    `
+	log.Printf("[%s] Executing query to fetch data from 'CLM_CLNT_MSTR' ", cpcm.serviceName)
+
+	row = db.Raw(clmQuery, strings.TrimSpace(cpcm.orderbook.C_cln_mtch_accnt)).Row()
+
+	var cCpCode, cUccCd string
+	err = row.Scan(&cCpCode, &cUccCd)
+
+	if err != nil {
+		log.Printf("[%s] Error scanning client details: %v", cpcm.serviceName, err)
+		log.Printf("[%s] Exiting fnRefToOrd with error", cpcm.serviceName)
+		return -1
+	}
+
+	log.Printf("[%s] cCpCode : %s", cpcm.serviceName, cCpCode)
+	log.Printf("[%s] cUccCd : %s", cpcm.serviceName, cUccCd)
+
+	log.Printf("[%s] Updating orderbook with client details", cpcm.serviceName)
+
+	cpcm.orderbook.C_cln_mtch_accnt = strings.TrimSpace(cUccCd)
+	cpcm.orderbook.C_settlor = strings.TrimSpace(cCpCode)
+	cpcm.orderbook.C_ctcl_id = strings.TrimSpace(cpcm.orderbook.C_ctcl_id)
+
 	log.Printf("[%s] Exiting fnFetchOrderDetails", cpcm.serviceName)
 	return 0
 }
