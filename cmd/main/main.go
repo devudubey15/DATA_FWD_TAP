@@ -133,4 +133,6 @@ func main() {
 		log.Fatal("Shutting down due to error") // log.Fatal logs the message and exits with status 1
 	}
 
+	log.Printf("[%s] Main Ended Here...", serviceName)
+
 }

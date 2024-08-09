@@ -4,6 +4,7 @@ import (
 	"DATA_FWD_TAP/models"
 	"DATA_FWD_TAP/models/structures"
 	"log"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -24,6 +25,7 @@ func (cpcm *ClnPackClntManager) Fn_bat_init(args []string, Db *gorm.DB) int {
 	var resultTmp int
 	cpcm.serviceName = "cln_pack_clnt"
 	cpcm.xchngbook = &structures.Vw_xchngbook{}
+	cpcm.orderbook = &structures.Vw_orderbook{}
 	log.Printf("[%s] Entering Fn_bat_init", cpcm.serviceName)
 
 	// we are getting the 7 args
@@ -271,39 +273,41 @@ func (cpcm *ClnPackClntManager) fnRefToOrd(db *gorm.DB) int {
 		MEMSET(c_algo_id);
 		char c_source_flg = '\0';
 	*/
+
 	log.Printf("[%s] Entering fnFetchOrderDetails", cpcm.serviceName)
 	log.Printf("[%s] Before extracting the data from the 'fod_fo_ordr_dtls' and storing it in the 'orderbook' structure", cpcm.serviceName)
 
 	query := `
-    SELECT 
-        fod_clm_mtch_accnt,
-        fod_ordr_flw,
-        fod_ordr_tot_qty,
-        fod_exec_qty,
-        COALESCE(fod_exec_qty_day, 0),
-        fod_settlor,
-        fod_spl_flag,
-        TO_CHAR(fod_ord_ack_tm, 'YYYY-MM-DD HH24:MI:SS') AS fod_ord_ack_tm,
-        TO_CHAR(fod_lst_rqst_ack_tm, 'YYYY-MM-DD HH24:MI:SS') AS fod_lst_rqst_ack_tm,
-        fod_pro_cli_ind,
-        COALESCE(fod_ctcl_id, ' '),
-        COALESCE(fod_pan_no, '*'),
-        COALESCE(fod_lst_act_ref, '0'),
-        COALESCE(FOD_ESP_ID, '*'),
-        COALESCE(FOD_ALGO_ID, '*'),
-        COALESCE(FOD_SOURCE_FLG, '*')
-    FROM 
-        fod_fo_ordr_dtls
-    WHERE 
-        fod_ordr_rfrnc = ?
-    FOR UPDATE NOWAIT
+    SELECT
+    fod_clm_mtch_accnt,
+    fod_ordr_flw,
+    fod_ordr_tot_qty,
+    fod_exec_qty,
+    COALESCE(fod_exec_qty_day, 0),
+    fod_settlor,
+    fod_spl_flag,
+    TO_CHAR(fod_ord_ack_tm, 'YYYY-MM-DD HH24:MI:SS') AS fod_ord_ack_tm,
+    TO_CHAR(fod_lst_rqst_ack_tm, 'YYYY-MM-DD HH24:MI:SS') AS fod_lst_rqst_ack_tm,
+    fod_pro_cli_ind,
+    COALESCE(fod_ctcl_id, ' '),
+    COALESCE(fod_pan_no, '*'),
+    COALESCE(fod_lst_act_ref, '0'),
+    COALESCE(FOD_ESP_ID, '*'),
+    COALESCE(FOD_ALGO_ID, '*'),
+    COALESCE(FOD_SOURCE_FLG, '*')
+FROM
+    fod_fo_ordr_dtls
+WHERE
+    fod_ordr_rfrnc = ?
+FOR UPDATE NOWAIT;
+
     `
 
 	log.Printf("[%s] Executing query to fetch order details", cpcm.serviceName)
 
 	log.Printf("[%s] Order Reference: %s", cpcm.serviceName, cpcm.orderbook.C_ordr_rfrnc)
 
-	row := db.Raw(query, cpcm.orderbook.C_ordr_rfrnc).Row()
+	row := db.Raw(query, strings.TrimSpace(cpcm.orderbook.C_ordr_rfrnc)).Row()
 
 	err := row.Scan(
 		&cpcm.orderbook.C_cln_mtch_accnt,
@@ -330,6 +334,12 @@ func (cpcm *ClnPackClntManager) fnRefToOrd(db *gorm.DB) int {
 		return -1
 	}
 
+	cpcm.cPanNo = strings.TrimSpace(cpcm.cPanNo)
+	cpcm.cLstActRef = strings.TrimSpace(cpcm.cLstActRef)
+	cpcm.cEspID = strings.TrimSpace(cpcm.cEspID)
+	cpcm.cAlgoID = strings.TrimSpace(cpcm.cAlgoID)
+	cpcm.cSourceFlg = strings.TrimSpace(cpcm.cSourceFlg)
+
 	log.Printf("[%s] Data extracted and stored in the 'orderbook' structure:", cpcm.serviceName)
 	log.Printf("[%s]   C_cln_mtch_accnt:   %s", cpcm.serviceName, cpcm.orderbook.C_cln_mtch_accnt)
 	log.Printf("[%s]   C_ordr_flw:        %s", cpcm.serviceName, cpcm.orderbook.C_ordr_flw)
@@ -349,6 +359,7 @@ func (cpcm *ClnPackClntManager) fnRefToOrd(db *gorm.DB) int {
 	log.Printf("[%s]   C_source_flg_tmp:  %s", cpcm.serviceName, cpcm.cSourceFlg)
 
 	log.Printf("[%s] Data extracted and stored in the 'orderbook' structure successfully", cpcm.serviceName)
+
 	log.Printf("[%s] Exiting fnFetchOrderDetails", cpcm.serviceName)
 	return 0
 }
