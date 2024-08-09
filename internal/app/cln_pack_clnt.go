@@ -260,7 +260,6 @@ WHERE fxb_xchng_cd =?
 	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure successfully", cpcm.serviceName)
 	log.Printf("[%s] Exiting fnSeqToOmd", cpcm.serviceName)
 	return 0
-
 }
 
 func (cpcm *ClnPackClntManager) fnRefToOrd(db *gorm.DB) int {
@@ -392,5 +391,9 @@ FOR UPDATE NOWAIT;
 	cpcm.orderbook.C_ctcl_id = strings.TrimSpace(cpcm.orderbook.C_ctcl_id)
 
 	log.Printf("[%s] Exiting fnFetchOrderDetails", cpcm.serviceName)
+	return 0
+}
+
+func (cpcm *ClnPackClntManager) fn_upd_xchngbk(db *gorm.DB) int {
 	return 0
 }
