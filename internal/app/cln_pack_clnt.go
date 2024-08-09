@@ -8,117 +8,114 @@ import (
 	"gorm.io/gorm"
 )
 
-// var sql_pipe_id [3]byte
-// var sql_c_xchng_cd [4]byte
-var serviceName string = "cln_pack_clnt"
+type ClnPackClntManager struct {
+	serviceName string
+	xchngbook   *structures.Vw_xchngbook
+}
 
-func Fn_bat_init(args []string, Db *gorm.DB) int {
+func (cpcm *ClnPackClntManager) Fn_bat_init(args []string, Db *gorm.DB) int {
 	var temp_str string
 	var resultTmp int
-	log.Printf("[%s] Entering Fn_bat_init", serviceName)
+	cpcm.serviceName = "cln_pack_clnt"
+	cpcm.xchngbook = &structures.Vw_xchngbook{}
+	log.Printf("[%s] Entering Fn_bat_init", cpcm.serviceName)
 
 	// we are getting the 7 args
 	if len(args) < 7 {
-		log.Printf("[%s] Error: insufficient arguments provided", serviceName)
+		log.Printf("[%s] Error: insufficient arguments provided", cpcm.serviceName)
 		return -1
 	}
 
-	// here we are fetching the Pipe id
-	exchngbook := &structures.Vw_xchngbook{}
+	cpcm.xchngbook.C_pipe_id = args[3]
 
-	exchngbook.C_pipe_id = args[3]
-
-	log.Printf("[%s] Copied pipe ID from args[3]: %s", serviceName, exchngbook.C_pipe_id[:])
+	log.Printf("[%s] Copied pipe ID from args[3]: %s", cpcm.serviceName, cpcm.xchngbook.C_pipe_id)
 
 	// Fetch exchange code
 	queryForOpm_Xchng_Cd := `SELECT opm_xchng_cd
 				FROM opm_ord_pipe_mstr
 				WHERE opm_pipe_id = ?`
 
-	log.Printf("[%s] Executing query to fetch exchange code with pipe ID: %s", serviceName, exchngbook.C_pipe_id[:])
+	log.Printf("[%s] Executing query to fetch exchange code with pipe ID: %s", cpcm.serviceName, cpcm.xchngbook.C_pipe_id)
 
-	row := Db.Raw(queryForOpm_Xchng_Cd, exchngbook.C_pipe_id).Row()
+	row := Db.Raw(queryForOpm_Xchng_Cd, cpcm.xchngbook.C_pipe_id).Row()
 	temp_str = ""
 	err := row.Scan(&temp_str)
 	if err != nil {
-		log.Printf("[%s] Error scanning row for exchange code: %v", serviceName, err)
+		log.Printf("[%s] Error scanning row for exchange code: %v", cpcm.xchngbook.C_xchng_cd, err)
 		return -1
 	}
 
-	exchngbook.C_xchng_cd = temp_str
+	cpcm.xchngbook.C_xchng_cd = temp_str
 	temp_str = ""
-	log.Printf("[%s] Exchange code fetched: %s", serviceName, exchngbook.C_xchng_cd)
+	log.Printf("[%s] Exchange code fetched: %s", cpcm.serviceName, cpcm.xchngbook.C_xchng_cd)
 
 	// Fetch modification trade date
 	queryFor_exg_nxt_trd_dt := `SELECT exg_nxt_trd_dt
 				FROM exg_xchng_mstr
 				WHERE exg_xchng_cd = ?`
 
-	log.Printf("[%s] Executing query to fetch modification trade date with exchange code: %s", serviceName, exchngbook.C_xchng_cd)
-	row2 := Db.Raw(queryFor_exg_nxt_trd_dt, exchngbook.C_xchng_cd).Row()
+	log.Printf("[%s] Executing query to fetch modification trade date with exchange code: %s", cpcm.serviceName, cpcm.xchngbook.C_xchng_cd)
+	row2 := Db.Raw(queryFor_exg_nxt_trd_dt, cpcm.xchngbook.C_xchng_cd).Row()
 
 	err2 := row2.Scan(&temp_str)
 	if err2 != nil {
-		log.Printf("[%s] Error scanning row for modification trade date: %v", serviceName, err2)
+		log.Printf("[%s] Error scanning row for modification trade date: %v", cpcm.serviceName, err2)
 		return -1
 	}
 
 	TmpByteArr := []byte(temp_str) // these i have to look again
 	TmpArrLen := len(TmpByteArr)   // this i have to look again
 
-	exchngbook.C_mod_trd_dt = temp_str
+	cpcm.xchngbook.C_mod_trd_dt = temp_str
 
-	models.SETNULL(serviceName, []byte(exchngbook.C_mod_trd_dt), TmpArrLen)
+	models.SETNULL(cpcm.serviceName, []byte(cpcm.xchngbook.C_mod_trd_dt), TmpArrLen)
 
-	log.Printf("[%s] Modification trade date fetched and set in C_mod_trd_dt: %s", serviceName, exchngbook.C_mod_trd_dt[:TmpArrLen])
+	log.Printf("[%s] Modification trade date fetched and set in C_mod_trd_dt: %s", cpcm.serviceName, cpcm.xchngbook.C_mod_trd_dt[:TmpArrLen])
 
-	exchngbook.L_ord_seq = 0 // I am initially setting it to '0' because it was set that way in 'fn_bat_init' and I have not seen it getting changed anywhere. If I find it being changed somewhere, I will update it accordingly.
+	cpcm.xchngbook.L_ord_seq = 0 // I am initially setting it to '0' because it was set that way in 'fn_bat_init' and I have not seen it getting changed anywhere. If I find it being changed somewhere, I will update it accordingly.
 
-	log.Printf("[%s] L_ord_seq initialized to %d", serviceName, exchngbook.L_ord_seq)
+	log.Printf("[%s] L_ord_seq initialized to %d", cpcm.serviceName, cpcm.xchngbook.L_ord_seq)
 
-	log.Printf("[%s] Exiting Fn_bat_init", serviceName)
-
-	resultTmp = CLN_PACK_CLNT(args, Db)
+	resultTmp = cpcm.CLN_PACK_CLNT(args, Db)
 	if resultTmp != 0 {
-		log.Printf("[%s] CLN_PACK_CLNT failed with result code: %d", serviceName, resultTmp)
-		log.Printf("[%s] Returning to main from fn_bat_init", serviceName)
+		log.Printf("[%s] CLN_PACK_CLNT failed with result code: %d", cpcm.serviceName, resultTmp)
+		log.Printf("[%s] Returning to main from fn_bat_init", cpcm.serviceName)
 		return -1
 	}
+	log.Printf("[%s] Exiting Fn_bat_init", cpcm.serviceName)
 	return 0
 }
 
-func CLN_PACK_CLNT(args []string, Db *gorm.DB) int {
+func (cpcm *ClnPackClntManager) CLN_PACK_CLNT(args []string, Db *gorm.DB) int {
 	var resultTmp int
 
-	log.Printf("[%s] Entering CLN_PACK_CLNT", serviceName)
-	resultTmp = fnGetNxtRec(args, Db)
+	log.Printf("[%s] Entering CLN_PACK_CLNT", cpcm.serviceName)
+	resultTmp = cpcm.fnGetNxtRec(args, Db)
 	if resultTmp != 0 {
-		log.Printf("[%s] failed in getting the next record returning with result code: %d", serviceName, resultTmp)
-		log.Printf("[%s] Exiting CLN_PACK_CLNT with error", serviceName)
+		log.Printf("[%s] failed in getting the next record returning with result code: %d", cpcm.serviceName, resultTmp)
+		log.Printf("[%s] Exiting CLN_PACK_CLNT with error", cpcm.serviceName)
 		return -1
 	}
-	log.Printf("[%s] Exiting CLN_PACK_CLNT", serviceName)
+	log.Printf("[%s] Exiting CLN_PACK_CLNT", cpcm.serviceName)
 	return 0
 }
 
-func fnGetNxtRec(args []string, Db *gorm.DB) int {
-	log.Printf("[%s] Entering fnGetNxtRec", serviceName)
+func (cpcm *ClnPackClntManager) fnGetNxtRec(args []string, Db *gorm.DB) int {
+	log.Printf("[%s] Entering fnGetNxtRec", cpcm.serviceName)
 
-	exchngbook := &structures.Vw_xchngbook{}
-
-	resultTmp := fnSeqToOmd(Db, exchngbook)
+	resultTmp := cpcm.fnSeqToOmd(Db)
 	if resultTmp != 0 {
-		log.Printf("[%s] Failed to fetch data into exchngbook structure", serviceName)
+		log.Printf("[%s] Failed to fetch data into exchngbook structure", cpcm.serviceName)
 		return -1
 	}
 
-	log.Printf("[%s] Exiting fnGetNxtRec", serviceName)
+	log.Printf("[%s] Exiting fnGetNxtRec", cpcm.serviceName)
 	return 0
 }
 
-func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
-	log.Printf("[%s] Entering fnSeqToOmd", serviceName)
-	log.Printf("[%s] Before extracting the data from the 'fxb_ordr_rfrnc' and storing it in the 'xchngbook' structure", serviceName)
+func (cpcm *ClnPackClntManager) fnSeqToOmd(db *gorm.DB) int {
+	log.Printf("[%s] Entering fnSeqToOmd", cpcm.serviceName)
+	log.Printf("[%s] Before extracting the data from the 'fxb_ordr_rfrnc' and storing it in the 'xchngbook' structure", cpcm.serviceName)
 
 	query := `
 	SELECT fxb_ordr_rfrnc,
@@ -135,7 +132,7 @@ func fnSeqToOmd(db *gorm.DB, xchngbook *structures.Vw_xchngbook) int {
        fxb_rqst_typ,
        fxb_ordr_sqnc
 FROM FXB_FO_XCHNG_BOOK
-WHERE fxb_xchng_cd = ?
+WHERE fxb_xchng_cd =?
   AND fxb_pipe_id = ?
   AND TO_DATE(fxb_mod_trd_dt, 'YYYY-MM-DD') = TO_DATE(?, 'YYYY-MM-DD')
   AND fxb_ordr_sqnc = (
@@ -148,19 +145,22 @@ WHERE fxb_xchng_cd = ?
   )
 `
 
-	log.Printf("[%s] Executing query to fetch order details", serviceName)
+	log.Printf("[%s] Executing query to fetch order details", cpcm.serviceName)
 
-	log.Printf("[%s] C_xchng_cd: %s", serviceName, xchngbook.C_xchng_cd)
-	log.Printf("[%s] C_pipe_id: %s", serviceName, xchngbook.C_pipe_id)
-	log.Printf("[%s] C_mod_trd_dt: %s", serviceName, xchngbook.C_mod_trd_dt)
+	log.Printf("[%s] C_xchng_cd: %s", cpcm.serviceName, cpcm.xchngbook.C_xchng_cd)
+	log.Printf("[%s] C_pipe_id: %s", cpcm.serviceName, cpcm.xchngbook.C_pipe_id)
+	log.Printf("[%s] C_mod_trd_dt: %s", cpcm.serviceName, cpcm.xchngbook.C_mod_trd_dt)
 
 	row := db.Raw(query,
-		xchngbook.C_xchng_cd,
-		xchngbook.C_pipe_id,
-		xchngbook.C_mod_trd_dt,
-		xchngbook.C_xchng_cd,
-		xchngbook.C_mod_trd_dt,
-		xchngbook.C_pipe_id).Row()
+		cpcm.xchngbook.C_xchng_cd,
+		cpcm.xchngbook.C_pipe_id,
+		cpcm.xchngbook.C_mod_trd_dt,
+		cpcm.xchngbook.C_xchng_cd,
+		cpcm.xchngbook.C_mod_trd_dt,
+		cpcm.xchngbook.C_pipe_id).Row()
+	/*
+
+	 */
 
 	/* xchngbook.C_xchng_cd
 	   The value of 'xchngbook.C_xchng_cd' is obtained from a query in 'fn_bat_init':
@@ -204,37 +204,38 @@ WHERE fxb_xchng_cd = ?
 	*/
 
 	err := row.Scan(
-		&xchngbook.C_slm_flg,
-		&xchngbook.L_dsclsd_qty,
-		&xchngbook.L_ord_tot_qty,
-		&xchngbook.L_ord_lmt_rt,
-		&xchngbook.L_stp_lss_tgr,
-		&xchngbook.C_valid_dt,
-		&xchngbook.C_ord_typ,
-		&xchngbook.C_req_typ,
-		&xchngbook.L_ord_seq,
+		&cpcm.xchngbook.C_ordr_rfrnc,
+		&cpcm.xchngbook.C_slm_flg,
+		&cpcm.xchngbook.L_dsclsd_qty,
+		&cpcm.xchngbook.L_ord_tot_qty,
+		&cpcm.xchngbook.L_ord_lmt_rt,
+		&cpcm.xchngbook.L_stp_lss_tgr,
+		&cpcm.xchngbook.C_valid_dt,
+		&cpcm.xchngbook.C_ord_typ,
+		&cpcm.xchngbook.C_req_typ,
+		&cpcm.xchngbook.L_ord_seq,
 	)
 
 	if err != nil {
-		log.Printf("[%s] Error scanning row: %v", serviceName, err)
-		log.Printf("[%s] Exiting fnSeqToOmd with error", serviceName)
+		log.Printf("[%s] Error scanning row: %v", cpcm.serviceName, err)
+		log.Printf("[%s] Exiting fnSeqToOmd with error", cpcm.serviceName)
 		return -1
 	}
 
-	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure:", serviceName)
-	log.Printf("[%s]   C_slm_flg: %c", serviceName, xchngbook.C_slm_flg)
-	log.Printf("[%s]   L_dsclsd_qty: %d", serviceName, xchngbook.L_dsclsd_qty)
-	log.Printf("[%s]   L_ord_tot_qty: %d", serviceName, xchngbook.L_ord_tot_qty)
-	log.Printf("[%s]   L_ord_lmt_rt: %d", serviceName, xchngbook.L_ord_lmt_rt)
-	log.Printf("[%s]   L_stp_lss_tgr: %d", serviceName, xchngbook.L_stp_lss_tgr)
-	log.Printf("[%s]   C_valid_dt: %s", serviceName, xchngbook.C_valid_dt)
-	log.Printf("[%s]   C_ord_typ: %c", serviceName, xchngbook.C_ord_typ)
-	log.Printf("[%s]   C_req_typ: %c", serviceName, xchngbook.C_req_typ)
-	log.Printf("[%s]   L_ord_seq: %d", serviceName, xchngbook.L_ord_seq)
+	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure:", cpcm.serviceName)
+	log.Printf("[%s]   C_ordr_rfrnc: 	%s", cpcm.serviceName, cpcm.xchngbook.C_ordr_rfrnc)
+	log.Printf("[%s]   C_slm_flg: 		%s", cpcm.serviceName, cpcm.xchngbook.C_slm_flg)
+	log.Printf("[%s]   L_dsclsd_qty: 	%d", cpcm.serviceName, cpcm.xchngbook.L_dsclsd_qty)
+	log.Printf("[%s]   L_ord_tot_qty: 	%d", cpcm.serviceName, cpcm.xchngbook.L_ord_tot_qty)
+	log.Printf("[%s]   L_ord_lmt_rt: 	%d", cpcm.serviceName, cpcm.xchngbook.L_ord_lmt_rt)
+	log.Printf("[%s]   L_stp_lss_tgr: 	%d", cpcm.serviceName, cpcm.xchngbook.L_stp_lss_tgr)
+	log.Printf("[%s]   C_valid_dt: 		%s", cpcm.serviceName, cpcm.xchngbook.C_valid_dt)
+	log.Printf("[%s]   C_ord_typ: 		%s", cpcm.serviceName, cpcm.xchngbook.C_ord_typ)
+	log.Printf("[%s]   C_req_typ: 		%s", cpcm.serviceName, cpcm.xchngbook.C_req_typ)
+	log.Printf("[%s]   L_ord_seq: 		%d", cpcm.serviceName, cpcm.xchngbook.L_ord_seq)
 
-	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure successfully", serviceName)
-	log.Printf("[%s] Exiting fnSeqToOmd", serviceName)
+	log.Printf("[%s] Data extracted and stored in the 'xchngbook' structure successfully", cpcm.serviceName)
+	log.Printf("[%s] Exiting fnSeqToOmd", cpcm.serviceName)
 	return 0
 
-	// comment for first commit of the day (09/08/2024)
 }

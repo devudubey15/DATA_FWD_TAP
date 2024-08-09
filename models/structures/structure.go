@@ -14,16 +14,17 @@ const (
 )
 
 type Vw_xchngbook struct {
+	C_ordr_rfrnc  string // this valiable we are getting from the table
 	C_pipe_id     string // this variable we are getting from the args[3]
 	C_mod_trd_dt  string // checkout this one, we are getting from table "exg_xchng_mstr"
 	L_ord_seq     int32  // this variable we are gettign from the table
-	C_slm_flg     byte   // this variable we are gettign from the table
+	C_slm_flg     string //byte   // this variable we are gettign from the table
 	L_dsclsd_qty  int32  // this variable we are gettign from the table
 	L_ord_tot_qty int32  // this variable we are gettign from the table
 	L_ord_lmt_rt  int32  // this variable we are gettign from the table
 	L_stp_lss_tgr int32  // this variable we are gettign from the table
-	C_ord_typ     byte   // this variable we are gettign from the table
-	C_req_typ     byte   // this variable we are gettign from the table
+	C_ord_typ     string //byte   // this variable we are gettign from the table
+	C_req_typ     string //byte   // this variable we are gettign from the table
 	C_valid_dt    string // this variable we are gettign from the table
 	C_xchng_cd    string // this we are getting from "opm_ord_pipe_mstr"
 }

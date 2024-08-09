@@ -124,7 +124,9 @@ func main() {
 	*/
 
 	// Testing "cln_pack_clnt.go"
-	resultTmp = app.Fn_bat_init(args[1:], DB)
+
+	VarClnPack := &app.ClnPackClntManager{}
+	resultTmp = VarClnPack.Fn_bat_init(args[1:], DB)
 
 	if resultTmp != 0 {
 		log.Printf("[%s] Fn_bat_init failed with result code: %d", serviceName, resultTmp)
