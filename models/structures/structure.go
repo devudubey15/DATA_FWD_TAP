@@ -27,6 +27,7 @@ type Vw_xchngbook struct {
 	C_req_typ     string //byte   // this variable we are gettign from the table
 	C_valid_dt    string // this variable we are gettign from the table
 	C_xchng_cd    string // this we are getting from "opm_ord_pipe_mstr"
+	C_oprn_typ    string // this is we are setting
 }
 
 /*
@@ -34,18 +35,18 @@ type Vw_xchngbook struct {
 */
 
 type Vw_orderbook struct {
-	c_cln_mtch_accnt string
-	c_ordr_flw       byte
-	l_ord_tot_qty    int32
-	l_exctd_qty      int32
-	l_exctd_qty_day  int32
-	c_settlor        string
-
-	c_spl_flg     byte
-	c_ack_tm      string
-	c_prev_ack_tm string
-	c_pro_cli_ind byte
-	c_ctcl_id     string
+	C_ordr_rfrnc     string
+	C_cln_mtch_accnt string
+	C_ordr_flw       string //byte
+	L_ord_tot_qty    int32
+	L_exctd_qty      int32
+	L_exctd_qty_day  int32
+	C_settlor        string
+	C_spl_flg        string //byte
+	C_ack_tm         string
+	C_prev_ack_tm    string
+	C_pro_cli_ind    string //byte
+	C_ctcl_id        string
 }
 
 /*

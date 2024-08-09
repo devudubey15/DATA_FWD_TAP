@@ -9,8 +9,14 @@ import (
 )
 
 type ClnPackClntManager struct {
-	serviceName string
-	xchngbook   *structures.Vw_xchngbook
+	serviceName string                   // Name of the service being managed
+	xchngbook   *structures.Vw_xchngbook // Pointer to the Vw_xchngbook structure
+	orderbook   *structures.Vw_orderbook // Pointer to the Vw_orderbook structure
+	cPanNo      string                   // Pan number, initialized in the 'fnRefToOrd' method
+	cLstActRef  string                   // Last activity reference, initialized in the 'fnRefToOrd' method
+	cEspID      string                   // ESP ID, initialized in the 'fnRefToOrd' method
+	cAlgoID     string                   // Algorithm ID, initialized in the 'fnRefToOrd' method
+	cSourceFlg  string                   // Source flag, initialized in the 'fnRefToOrd' method
 }
 
 func (cpcm *ClnPackClntManager) Fn_bat_init(args []string, Db *gorm.DB) int {
@@ -106,6 +112,21 @@ func (cpcm *ClnPackClntManager) fnGetNxtRec(args []string, Db *gorm.DB) int {
 	resultTmp := cpcm.fnSeqToOmd(Db)
 	if resultTmp != 0 {
 		log.Printf("[%s] Failed to fetch data into exchngbook structure", cpcm.serviceName)
+		return -1
+	}
+
+	if cpcm.xchngbook == nil {
+		log.Printf("[%s] Error: xchngbook is nil", cpcm.serviceName)
+		return -1
+	}
+
+	// Log the assignment of C_ordr_rfrnc
+	log.Printf("[%s] Assigning C_ordr_rfrnc from exchngbook to orderbook", cpcm.serviceName)
+	cpcm.orderbook.C_ordr_rfrnc = cpcm.xchngbook.C_ordr_rfrnc
+
+	resultTmp = cpcm.fnRefToOrd(Db)
+	if resultTmp != 0 {
+		log.Printf("[%s] Failed to fetch data into orderbook structure", cpcm.serviceName)
 		return -1
 	}
 
@@ -238,4 +259,96 @@ WHERE fxb_xchng_cd =?
 	log.Printf("[%s] Exiting fnSeqToOmd", cpcm.serviceName)
 	return 0
 
+}
+
+func (cpcm *ClnPackClntManager) fnRefToOrd(db *gorm.DB) int {
+	/*
+		c_pan_no --> we are simply setting it to 0 using memset in the
+		MEMSET(c_ordr_rfrnc);
+		MEMSET(c_pan_no);
+		MEMSET(c_lst_act_ref);
+		MEMSET(c_esp_id);
+		MEMSET(c_algo_id);
+		char c_source_flg = '\0';
+	*/
+	log.Printf("[%s] Entering fnFetchOrderDetails", cpcm.serviceName)
+	log.Printf("[%s] Before extracting the data from the 'fod_fo_ordr_dtls' and storing it in the 'orderbook' structure", cpcm.serviceName)
+
+	query := `
+    SELECT 
+        fod_clm_mtch_accnt,
+        fod_ordr_flw,
+        fod_ordr_tot_qty,
+        fod_exec_qty,
+        COALESCE(fod_exec_qty_day, 0),
+        fod_settlor,
+        fod_spl_flag,
+        TO_CHAR(fod_ord_ack_tm, 'YYYY-MM-DD HH24:MI:SS') AS fod_ord_ack_tm,
+        TO_CHAR(fod_lst_rqst_ack_tm, 'YYYY-MM-DD HH24:MI:SS') AS fod_lst_rqst_ack_tm,
+        fod_pro_cli_ind,
+        COALESCE(fod_ctcl_id, ' '),
+        COALESCE(fod_pan_no, '*'),
+        COALESCE(fod_lst_act_ref, '0'),
+        COALESCE(FOD_ESP_ID, '*'),
+        COALESCE(FOD_ALGO_ID, '*'),
+        COALESCE(FOD_SOURCE_FLG, '*')
+    FROM 
+        fod_fo_ordr_dtls
+    WHERE 
+        fod_ordr_rfrnc = ?
+    FOR UPDATE NOWAIT
+    `
+
+	log.Printf("[%s] Executing query to fetch order details", cpcm.serviceName)
+
+	log.Printf("[%s] Order Reference: %s", cpcm.serviceName, cpcm.orderbook.C_ordr_rfrnc)
+
+	row := db.Raw(query, cpcm.orderbook.C_ordr_rfrnc).Row()
+
+	err := row.Scan(
+		&cpcm.orderbook.C_cln_mtch_accnt,
+		&cpcm.orderbook.C_ordr_flw,
+		&cpcm.orderbook.L_ord_tot_qty,
+		&cpcm.orderbook.L_exctd_qty,
+		&cpcm.orderbook.L_exctd_qty_day,
+		&cpcm.orderbook.C_settlor,
+		&cpcm.orderbook.C_spl_flg,
+		&cpcm.orderbook.C_ack_tm,
+		&cpcm.orderbook.C_prev_ack_tm,
+		&cpcm.orderbook.C_pro_cli_ind,
+		&cpcm.orderbook.C_ctcl_id,
+		&cpcm.cPanNo,
+		&cpcm.cLstActRef,
+		&cpcm.cEspID,
+		&cpcm.cAlgoID,
+		&cpcm.cSourceFlg,
+	)
+
+	if err != nil {
+		log.Printf("[%s] Error scanning row: %v", cpcm.serviceName, err)
+		log.Printf("[%s] Exiting fnFetchOrderDetails with error", cpcm.serviceName)
+		return -1
+	}
+
+	log.Printf("[%s] Data extracted and stored in the 'orderbook' structure:", cpcm.serviceName)
+	log.Printf("[%s]   C_cln_mtch_accnt:   %s", cpcm.serviceName, cpcm.orderbook.C_cln_mtch_accnt)
+	log.Printf("[%s]   C_ordr_flw:        %s", cpcm.serviceName, cpcm.orderbook.C_ordr_flw)
+	log.Printf("[%s]   L_ord_tot_qty:     %d", cpcm.serviceName, cpcm.orderbook.L_ord_tot_qty)
+	log.Printf("[%s]   L_exctd_qty:       %d", cpcm.serviceName, cpcm.orderbook.L_exctd_qty)
+	log.Printf("[%s]   L_exctd_qty_day:   %d", cpcm.serviceName, cpcm.orderbook.L_exctd_qty_day)
+	log.Printf("[%s]   C_settlor:         %s", cpcm.serviceName, cpcm.orderbook.C_settlor)
+	log.Printf("[%s]   C_spl_flg:         %s", cpcm.serviceName, cpcm.orderbook.C_spl_flg)
+	log.Printf("[%s]   C_ack_tm:          %s", cpcm.serviceName, cpcm.orderbook.C_ack_tm)
+	log.Printf("[%s]   C_prev_ack_tm:     %s", cpcm.serviceName, cpcm.orderbook.C_prev_ack_tm)
+	log.Printf("[%s]   C_pro_cli_ind:     %s", cpcm.serviceName, cpcm.orderbook.C_pro_cli_ind)
+	log.Printf("[%s]   C_ctcl_id:         %s", cpcm.serviceName, cpcm.orderbook.C_ctcl_id)
+	log.Printf("[%s]   C_pan_no:          %s", cpcm.serviceName, cpcm.cPanNo)
+	log.Printf("[%s]   C_lst_act_ref_tmp: %s", cpcm.serviceName, cpcm.cLstActRef)
+	log.Printf("[%s]   C_esp_id:          %s", cpcm.serviceName, cpcm.cEspID)
+	log.Printf("[%s]   C_algo_id:         %s", cpcm.serviceName, cpcm.cAlgoID)
+	log.Printf("[%s]   C_source_flg_tmp:  %s", cpcm.serviceName, cpcm.cSourceFlg)
+
+	log.Printf("[%s] Data extracted and stored in the 'orderbook' structure successfully", cpcm.serviceName)
+	log.Printf("[%s] Exiting fnFetchOrderDetails", cpcm.serviceName)
+	return 0
 }
